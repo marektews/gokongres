@@ -6,11 +6,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // SessionData przechowuje dane sesji
 type SessionData struct {
-	UserID   int
+	UserID   primitive.ObjectID
 	Username string
 }
 
@@ -62,7 +63,7 @@ func GetSessionData(r *http.Request) *SessionData {
 		return nil
 	}
 
-	userID, ok := session.Values["uid"].(int)
+	userID, ok := session.Values["uid"].(primitive.ObjectID)
 	if !ok {
 		log.Printf("GetSessionData: No user ID in session")
 		return nil
@@ -103,7 +104,7 @@ func SessionMiddleware(next http.Handler) http.Handler {
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionData := GetSessionData(r)
-		if sessionData == nil || sessionData.UserID <= 0 {
+		if sessionData == nil || sessionData.UserID == primitive.NilObjectID {
 			log.Printf("AuthMiddleware: Unauthorized access attempt")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

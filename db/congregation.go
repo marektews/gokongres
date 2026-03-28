@@ -2,7 +2,7 @@ package db
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type Zbory struct {
+type Congregation struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty"`
 	Number int                `bson:"number"`
 	Name   string             `bson:"name"`

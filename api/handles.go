@@ -6,6 +6,7 @@ import (
 	"gokongres/api/arrivals"
 	"gokongres/api/auth"
 	"gokongres/api/limits"
+	"gokongres/api/pk"
 	"gokongres/sessions"
 
 	"github.com/gorilla/mux"
@@ -24,7 +25,6 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/api/auth/login", auth.LoginHandler).Methods(http.MethodPost)
 	r.HandleFunc("/api/auth/admin", auth.AdminHandler).Methods(http.MethodPost)
 	r.HandleFunc("/api/auth/logout", auth.LogoutHandler).Methods(http.MethodPost)
-	r.HandleFunc("/api/auth/me", auth.MeHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/auth/permissions", auth.PermissionsHandler).Methods(http.MethodPost)
 
 	r.HandleFunc("/api/arrivals/all", arrivals.GetAll).Methods(http.MethodGet)
@@ -36,5 +36,10 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/api/limits/dzialy", limits.GetDzialy).Methods(http.MethodGet)
 	r.HandleFunc("/api/limits/dzialy/setlimit", limits.SetDzialyLimit).Methods(http.MethodPost)
 
+	// PK (parking księżycowy/torwar) endpoints
+	r.HandleFunc("/api/pk/hints", pk.GetHints).Methods(http.MethodGet)
+	r.HandleFunc("/api/pk/all", pk.GetLoadAll).Methods(http.MethodGet)
+
+	// podłączenie routera do serwera HTTP
 	http.Handle("/", r)
 }

@@ -8,7 +8,7 @@ import (
 
 type SOA struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty"`
-	RjaID  int                `bson:"rja_id"`
+	RjaID  primitive.ObjectID `bson:"rja_id"`
 	Status string             `bson:"status"`
 	Ts     time.Time          `bson:"ts"`
 }

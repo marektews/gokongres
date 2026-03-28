@@ -14,7 +14,6 @@ type UserPermissions struct {
 
 type User struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	Uid         int                `bson:"uid"`
 	Username    string             `bson:"username"`
 	Hash        string             `bson:"hash"`
 	FirstName   string             `bson:"first_name"`

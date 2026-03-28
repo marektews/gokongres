@@ -21,7 +21,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// parsowanie zapytania
 	type Credentials struct {
 		Login  string `json:"login"`
-		Passwd string `json:"passwd"`
+		Passwd string `json:"passwd"` //TODO: zmienić na password (może)
 	}
 
 	var creds Credentials
@@ -56,7 +56,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Utwórz dane sesji z danych pobranych z bazy
 	sessionData := sessions.SessionData{
-		UserID:   user.Uid,
+		UserID:   user.ID,
 		Username: user.Username,
 	}
 

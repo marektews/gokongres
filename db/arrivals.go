@@ -8,7 +8,7 @@ import (
 
 type Arrivals struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty"`
-	BusID    int                `bson:"bus_id"`
+	BusID    primitive.ObjectID `bson:"bus_id"`
 	DateTime time.Time          `bson:"datetime"`
 	Arrived  bool               `bson:"arrived"`
 }

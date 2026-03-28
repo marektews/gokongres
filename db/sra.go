@@ -8,8 +8,8 @@ import (
 
 type SRA struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty"`
-	ZborID           int                `bson:"zbor_id"`
-	BusID            int                `bson:"bus_id"`
+	CongregationID   primitive.ObjectID `bson:"zbor_id"`
+	BusID            primitive.ObjectID `bson:"bus_id"`
 	Lp               *int               `bson:"lp,omitempty"`
 	Canceled         int                `bson:"canceled"`
 	Pilot1ID         int                `bson:"pilot1_id"`

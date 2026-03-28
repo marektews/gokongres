@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -61,7 +62,7 @@ func AdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Utwórz dane sesji z danych pobranych z bazy
 	sessionData := sessions.SessionData{
-		UserID:   user.Uid,
+		UserID:   user.ID,
 		Username: user.Username,
 	}
 
@@ -74,13 +75,13 @@ func AdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Przygotuj odpowiedź z danymi użytkownika
 	type Response struct {
-		Id          int                `json:"id"`
+		Id          primitive.ObjectID `json:"id"`
 		FirstName   string             `json:"fn"`
 		LastName    string             `json:"ln"`
 		Permissions db.UserPermissions `json:"permissions"`
 	}
 	resp := Response{
-		Id:          user.Uid,
+		Id:          user.ID,
 		FirstName:   user.FirstName,
 		LastName:    user.LastName,
 		Permissions: user.Permissions,

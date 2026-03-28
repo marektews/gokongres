@@ -74,10 +74,12 @@ func InsertArrival(ctx context.Context, message string) (map[string]any, error) 
 	if coll == nil {
 		return nil, fmt.Errorf("mongo client not initialized")
 	}
+
 	res, err := coll.InsertOne(ctx, bson.M{"message": message})
 	if err != nil {
 		return nil, err
 	}
+
 	oid, ok := res.InsertedID.(primitive.ObjectID)
 	if !ok {
 		return nil, fmt.Errorf("unexpected id type")
@@ -121,25 +123,31 @@ func GetAllArrivals(ctx context.Context) ([]map[string]any, error) {
 }
 
 // GetAllZbory pobiera wszystkie dokumenty z kolekcji "Zbory".
-func GetAllZbory(ctx context.Context) ([]Zbory, error) {
-	coll := Collection("Zbory")
+func GetAllZbory(ctx context.Context) ([]Congregation, error) {
+	coll := Collection("congregations")
 	if coll == nil {
+		log.Print("GetAllZbory: mongo client not initialized")
 		return nil, fmt.Errorf("mongo client not initialized")
 	}
+
 	cur, err := coll.Find(ctx, bson.M{})
 	if err != nil {
+		log.Printf("GetAllZbory: Error finding zbory: %v", err)
 		return nil, err
 	}
 	defer cur.Close(ctx)
-	var results []Zbory
+
+	var results []Congregation
 	for cur.Next(ctx) {
-		var z Zbory
+		var z Congregation
 		if err := cur.Decode(&z); err != nil {
+			log.Printf("GetAllZbory: Error decoding zbor: %v", err)
 			return nil, err
 		}
 		results = append(results, z)
 	}
 	if err := cur.Err(); err != nil {
+		log.Printf("GetAllZbory: Cursor error: %v", err)
 		return nil, err
 	}
 	return results, nil
@@ -147,53 +155,67 @@ func GetAllZbory(ctx context.Context) ([]Zbory, error) {
 
 // UpdateZboryLimit aktualizuje pole plimit dokumentu Zbory o podanym id.
 func UpdateZboryLimit(ctx context.Context, id string, plimit int) error {
-	coll := Collection("Zbory")
+	coll := Collection("congregations")
 	if coll == nil {
+		log.Print("UpdateZboryLimit: mongo client not initialized")
 		return fmt.Errorf("mongo client not initialized")
 	}
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		log.Printf("UpdateZboryLimit: Error converting id: %v", err)
 		return err
 	}
 	_, err = coll.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"plimit": plimit}})
 	return err
 }
 
-// GetAllDzialy pobiera wszystkie dokumenty z kolekcji "Dzialy".
-func GetAllDzialy(ctx context.Context) ([]Dzialy, error) {
-	coll := Collection("Dzialy")
+// GetAllDepartments pobiera wszystkie dokumenty z kolekcji Department (Działy kongresowe).
+func GetAllDepartments(ctx context.Context) ([]Department, error) {
+	coll := Collection("departments")
 	if coll == nil {
+		log.Print("GetAllDepartments: mongo client not initialized")
 		return nil, fmt.Errorf("mongo client not initialized")
 	}
+
 	cur, err := coll.Find(ctx, bson.M{})
 	if err != nil {
+		log.Printf("GetAllDepartments: Error finding dzialy: %v", err)
 		return nil, err
 	}
 	defer cur.Close(ctx)
-	var results []Dzialy
+
+	var results []Department
 	for cur.Next(ctx) {
-		var d Dzialy
+		var d Department
 		if err := cur.Decode(&d); err != nil {
+			log.Printf("GetAllDepartments: Error decoding dzial: %v", err)
 			return nil, err
 		}
 		results = append(results, d)
 	}
 	if err := cur.Err(); err != nil {
+		log.Printf("GetAllDepartments: Cursor error: %v", err)
 		return nil, err
 	}
+
 	return results, nil
 }
 
-// UpdateDzialyLimit aktualizuje plimit w kolekcji Dzialy.
-func UpdateDzialyLimit(ctx context.Context, id string, plimit int) error {
-	coll := Collection("Dzialy")
+// UpdateDepartmentLimit aktualizuje plimit w kolekcji Department (Działy kongresowe).
+func UpdateDepartmentLimit(ctx context.Context, id string, plimit int) error {
+	coll := Collection("departments")
 	if coll == nil {
+		log.Print("UpdateDepartmentLimit: mongo client not initialized")
 		return fmt.Errorf("mongo client not initialized")
 	}
+
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		log.Printf("UpdateDepartmentLimit: error converting id: %v", err)
 		return err
 	}
+
 	_, err = coll.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"plimit": plimit}})
+	log.Printf("UpdateDepartmentLimit: Updated department with id: %s, new plimit: %d", id, plimit)
 	return err
 }
