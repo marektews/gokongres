@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"log"
@@ -12,12 +13,35 @@ import (
 	"time"
 
 	"gokongres/api"
+	"gokongres/db"
+	"gokongres/sessions"
 )
 
 func main() {
 	host := flag.String("host", "127.0.0.1", "host to bind the server to")
 	port := flag.Int("port", 1977, "port to bind the server to")
 	flag.Parse()
+
+	// Initialize session store
+	// authKey := []byte("auth-key-change-me-in-production")
+	// encKey := []byte("enc-key-change-me-in-production-1234567890ab")
+	authKey := sha256.Sum256([]byte("development-auth-key"))
+	encKey := sha256.Sum256([]byte("development-enc-key"))
+	if err := sessions.InitSessions(authKey, encKey); err != nil {
+		log.Fatalf("Failed to initialize sessions: %v", err)
+	}
+
+	log.Printf("Connecting to MongoDB...")
+	err := db.Connect(context.Background(), "")
+	if err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	defer func() {
+		log.Printf("Disconnecting from MongoDB...")
+		if err := db.Disconnect(context.Background()); err != nil {
+			log.Printf("Error disconnecting from database: %v", err)
+		}
+	}()
 
 	api.RegisterHandlers(*host, *port)
 
