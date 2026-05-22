@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 )
 
 var client *mongo.Client
@@ -24,6 +25,7 @@ func Connect(ctx context.Context, uri string) error {
 			uri = "mongodb://localhost:27017"
 		}
 	}
+	log.Printf("Database URI: %s", uri)
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -59,7 +61,19 @@ func Collection(name string) *mongo.Collection {
 	}
 	dbname := os.Getenv("MONGODB_DB")
 	if dbname == "" {
-		dbname = "kongres"
+		uri := os.Getenv("MONGODB_URI")
+		if uri != "" {
+			cs, err := connstring.ParseAndValidate(uri)
+			if err == nil {
+				log.Printf("Parse mongodb URI, database name: %s", cs.Database)
+				dbname = cs.Database
+			} else {
+				log.Printf("Parse mongodb URI error: %v", err)
+				dbname = "kongres"
+			}
+		} else {
+			dbname = "kongres"
+		}
 	}
 	log.Printf("Using MongoDB collection: %s.%s", dbname, name)
 	return client.Database(dbname).Collection(name)

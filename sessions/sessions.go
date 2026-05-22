@@ -11,7 +11,7 @@ import (
 
 // SessionData przechowuje dane sesji
 type SessionData struct {
-	UserID   primitive.ObjectID
+	UserID   string
 	Username string
 }
 
@@ -71,7 +71,7 @@ func GetSessionData(r *http.Request) *SessionData {
 
 	username, _ := session.Values["username"].(string)
 	return &SessionData{
-		UserID:   userID,
+		UserID:   userID.Hex(),
 		Username: username,
 	}
 }
@@ -104,7 +104,7 @@ func SessionMiddleware(next http.Handler) http.Handler {
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionData := GetSessionData(r)
-		if sessionData == nil || sessionData.UserID == primitive.NilObjectID {
+		if sessionData == nil || sessionData.UserID == "" {
 			log.Printf("AuthMiddleware: Unauthorized access attempt")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

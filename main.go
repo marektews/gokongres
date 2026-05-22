@@ -9,22 +9,40 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"gokongres/api"
 	"gokongres/db"
 	"gokongres/sessions"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	host := flag.String("host", "127.0.0.1", "host to bind the server to")
-	port := flag.Int("port", 1977, "port to bind the server to")
+	// ładowanie pliku .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Błąd ładowania pliku .env, kontynuuję bez zmiennych środowiskowych")
+	}
+
+	defPort := 1977
+	envPortStr := os.Getenv("PORT")
+	if envPortStr != "" {
+		envPort, err := strconv.Atoi(envPortStr)
+		if err == nil {
+			defPort = envPort
+		}
+	}
+
+	host := flag.String("host", "localhost", "host to bind the server to")
+	port := flag.Int("port", defPort, "port to bind the server to")
 	flag.Parse()
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	// Initialize session store
-	// authKey := []byte("auth-key-change-me-in-production")
-	// encKey := []byte("enc-key-change-me-in-production-1234567890ab")
 	authKey := sha256.Sum256([]byte("development-auth-key"))
 	encKey := sha256.Sum256([]byte("development-enc-key"))
 	if err := sessions.InitSessions(authKey, encKey); err != nil {
@@ -32,12 +50,12 @@ func main() {
 	}
 
 	log.Printf("Connecting to MongoDB...")
-	err := db.Connect(context.Background(), "")
+	err = db.Connect(context.Background(), "")
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	defer func() {
-		log.Printf("Disconnecting from MongoDB...")
+		log.Printf("Disconnecting from MongoDB")
 		if err := db.Disconnect(context.Background()); err != nil {
 			log.Printf("Error disconnecting from database: %v", err)
 		}

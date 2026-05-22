@@ -7,6 +7,8 @@ import (
 	"gokongres/sessions"
 	"log"
 	"net/http"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 /**
@@ -22,7 +24,14 @@ func PermissionsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.GetUserByID(context.Background(), sessionData.UserID)
+	oid, err := primitive.ObjectIDFromHex(sessionData.UserID)
+	if err != nil {
+		log.Printf("PermissionsHandler: Invalid user ID format: %v", err)
+		http.Error(w, "invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	user, err := db.GetUserByID(context.Background(), oid)
 	if err != nil {
 		log.Printf("PermissionsHandler: Error fetching user for UID %d: %v", sessionData.UserID, err)
 		http.Error(w, "error fetching user data", http.StatusInternalServerError)

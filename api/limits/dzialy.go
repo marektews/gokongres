@@ -15,17 +15,17 @@ type dzialResponse struct {
 	Lang   string             `json:"lang"`
 	Name   string             `json:"name"`
 	Plimit int                `json:"plimit"`
-	TuraID primitive.ObjectID `json:"tura_id"`
+	TuraID int                `json:"tura_id"`
 }
 
 // GetDzialy zwraca wszystkie dzialy jako JSON.
-func GetDzialy(w http.ResponseWriter, r *http.Request) {
+func Get_Dzialy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if db.Client() == nil {
 		err := json.NewEncoder(w).Encode([]dzialResponse{})
 		if err != nil {
-			log.Printf("GetDzialy: Error encoding response: %v", err)
+			log.Printf("Get_Dzialy: Error encoding response: %v", err)
 			http.Error(w, "error encoding response", http.StatusInternalServerError)
 		}
 		return
@@ -51,7 +51,7 @@ func GetDzialy(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		log.Printf("GetDzialy: Error encoding response: %v", err)
+		log.Printf("Get_Dzialy: Error encoding response: %v", err)
 		return
 	}
 }
@@ -64,23 +64,23 @@ type setDzialLimitReq struct {
 }
 
 // SetDzialyLimit aktualizuje limit dla dzialu
-func SetDzialyLimit(w http.ResponseWriter, r *http.Request) {
+func Post_SetDzialyLimit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var req setDzialLimitReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("SetDzialyLimit: Error decoding request body: %v", err)
+		log.Printf("Post_SetDzialyLimit: Error decoding request body: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := db.UpdateDepartmentLimit(r.Context(), req.DzialID, req.Plimit); err != nil {
 		if err == primitive.ErrInvalidHex {
-			log.Printf("SetDzialyLimit: invalid id - %s", req.DzialID)
+			log.Printf("Post_SetDzialyLimit: invalid id - %s", req.DzialID)
 			http.Error(w, "invalid id", http.StatusBadRequest)
 			return
 		} else {
-			log.Printf("SetDzialyLimit: Error updating limit for dzial.id %s: %v", req.DzialID, err)
+			log.Printf("Post_SetDzialyLimit: Error updating limit for dzial.id %s: %v", req.DzialID, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

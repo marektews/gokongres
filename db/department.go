@@ -8,5 +8,5 @@ type Department struct {
 	Name     string             `bson:"name"`
 	Password string             `bson:"password"`
 	Plimit   int                `bson:"plimit"`
-	TuraID   primitive.ObjectID `bson:"tura"`
+	TuraID   int                `bson:"tura"`
 }

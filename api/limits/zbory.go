@@ -20,12 +20,12 @@ type zborResponse struct {
 }
 
 // GetZbory zwraca wszystkie zbiory (zbory) jako JSON.
-func GetZbory(w http.ResponseWriter, r *http.Request) {
+func Get_Zbory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	zbory, err := db.GetAllZbory(r.Context())
 	if err != nil {
-		log.Printf("GetZbory: Error fetching zbory: %v", err)
+		log.Printf("Get_Zbory: Error fetching zbory: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -45,7 +45,7 @@ func GetZbory(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		log.Printf("GetZbory: Error encoding response: %v", err)
+		log.Printf("Get_Zbory: Error encoding response: %v", err)
 		return
 	}
 }
@@ -58,12 +58,12 @@ type setZborLimitReq struct {
 }
 
 // SetZboryLimit aktualizuje limit dla wybranego zboru.
-func SetZboryLimit(w http.ResponseWriter, r *http.Request) {
+func Post_SetZboryLimit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var req setZborLimitReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("SetZboryLimit: error decoding request body: %v", err)
+		log.Printf("Set_ZboryLimit: error decoding request body: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -76,7 +76,7 @@ func SetZboryLimit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid id", http.StatusBadRequest)
 			return
 		} else {
-			log.Printf("SetZboryLimit: error updating limit for zbor_id %s: %v", req.ZborID, err)
+			log.Printf("Set_ZboryLimit: error updating limit for zbor_id %s: %v", req.ZborID, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

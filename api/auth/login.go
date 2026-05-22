@@ -1,14 +1,13 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
 	"gokongres/db"
-	"gokongres/sessions"
+	"log"
 	"net/http"
-	"time"
+	"strconv"
 
-	"golang.org/x/crypto/bcrypt"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 /**
@@ -27,42 +26,49 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
+		log.Printf("Error decoding login request: %v", err)
 		http.Error(w, "invalid request body, JSON expected", http.StatusBadRequest)
 		return
 	}
 
 	if creds.Login == "" || creds.Passwd == "" {
+		log.Println("Login or password not provided")
 		http.Error(w, "login and passwd fields are required", http.StatusBadRequest)
 		return
 	}
 
-	// Pobierz użytkownika z bazy danych
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	user, err := db.GetUserByUsername(ctx, creds.Login)
+	iPasswd, err := strconv.Atoi(creds.Passwd)
 	if err != nil {
-		http.Error(w, "user not found", http.StatusUnauthorized)
+		log.Printf("Error converting password to integer: %v", err)
+		http.Error(w, "invalid password format", http.StatusBadRequest)
 		return
 	}
 
-	// Weryfikuj hasło
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Hash), []byte(creds.Passwd)); err != nil {
-		http.Error(w, "invalid credentials", http.StatusForbidden)
+	log.Printf("Login attempt for login '%s' (%d)", creds.Login, iPasswd)
+
+	// wyszukiwanie zboru o podanej nazwie i numerze
+	coll := db.Collection("congregations")
+	if coll == nil {
+		log.Println("Collection 'congregations' not found")
+		http.Error(w, "database error", http.StatusInternalServerError)
 		return
 	}
 
+	res := coll.FindOne(r.Context(), bson.M{"name": creds.Login, "number": iPasswd})
+	if res.Err() != nil {
+		log.Printf("Login failed for login '%s': %v", creds.Login, res.Err())
+		http.Error(w, "invalid login or password", http.StatusUnauthorized)
+		return
+	}
+
+	var congregation db.Congregation
+	err = res.Decode(&congregation)
+	if err != nil {
+		log.Printf("Error decoding congregation for login '%s': %v", creds.Login, err)
+		http.Error(w, "Error decoding congregation for login", http.StatusUnauthorized)
+		return
+	}
+	// logowanie udane nic więcej nie potrzeba oprócz statusu 200 OK
+	log.Printf("Login successful for congregation '%s'", congregation.Name)
 	w.WriteHeader(http.StatusOK)
-
-	// Utwórz dane sesji z danych pobranych z bazy
-	sessionData := sessions.SessionData{
-		UserID:   user.ID,
-		Username: user.Username,
-	}
-
-	// Zapisz sesję
-	if err := sessions.SetSessionData(w, r, sessionData); err != nil {
-		http.Error(w, "Failed to create session", http.StatusInternalServerError)
-		return
-	}
 }

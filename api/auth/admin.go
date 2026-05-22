@@ -53,7 +53,7 @@ func AdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Weryfikuj hasło
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Hash), []byte(creds.Password)); err != nil {
-		log.Printf("AdminHandler: Invalid credentials for user - %s", creds.Login)
+		log.Printf("AdminHandler: Invalid credentials for user - %s, error: %v", creds.Login, err)
 		http.Error(w, "invalid credentials", http.StatusForbidden)
 		return
 	}
@@ -62,7 +62,7 @@ func AdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Utwórz dane sesji z danych pobranych z bazy
 	sessionData := sessions.SessionData{
-		UserID:   user.ID,
+		UserID:   user.ID.Hex(),
 		Username: user.Username,
 	}
 

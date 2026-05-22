@@ -9,7 +9,7 @@ import (
 
 // GetAll zwraca listę wszystkich arrivals w formacie JSON.
 // Jeśli dostępny jest klient MongoDB, pobiera z bazy, w przeciwnym razie zwraca pamięciowy store.
-func GetAll(w http.ResponseWriter, r *http.Request) {
+func Get_All(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if db.Client() != nil {
 		ctx := r.Context()
