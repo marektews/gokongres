@@ -15,10 +15,7 @@ import (
  */
 func Post_IsPilotDuplicate(w http.ResponseWriter, r *http.Request) {
 	type RequestData struct {
-		Phone struct {
-			CountryCode string `json:"direct"`
-			Number      string `json:"number"`
-		} `json:"phone"`
+		Phone db.Phone `json:"phone"`
 	}
 	var reqData RequestData
 	err := json.NewDecoder(r.Body).Decode(&reqData)

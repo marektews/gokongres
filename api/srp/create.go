@@ -140,7 +140,7 @@ func findUnusedNumbers(ctx context.Context, reqData *RequestData, congregationID
 		log.Println("Collection 'srp' not found")
 		return nil, fmt.Errorf("collection 'srp' not found")
 	}
-	cur, err := coll.Find(ctx, bson.M{"zbor_id": congregationID})
+	cur, err := coll.Find(ctx, bson.M{"congregation_id": congregationID})
 	if err != nil {
 		return nil, fmt.Errorf("error finding SRP entries: %v", err)
 	}

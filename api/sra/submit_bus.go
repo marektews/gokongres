@@ -15,22 +15,12 @@ import (
 )
 
 // odbiór danych z żądania
-type Phone struct {
-	CountryCode string `json:"direct"`
-	Number      string `json:"number"`
-}
-type Pilot struct {
-	FirstName string `json:"firstname"`
-	LastName  string `json:"lastname"`
-	Email     string `json:"email"`
-	Phone     Phone  `json:"phone"`
-}
 type RegistrationData struct {
-	CongregationName string  `json:"congregation"`
-	Bus              db.Bus  `json:"bus"`
-	Info             *string `json:"info,omitempty"`
-	OnePilot         bool    `json:"one_pilot"`
-	Pilot            []Pilot `json:"pilot"`
+	CongregationName string     `json:"congregation"`
+	Bus              db.Bus     `json:"bus"`
+	Info             *string    `json:"info,omitempty"`
+	OnePilot         bool       `json:"one_pilot"`
+	Pilot            []db.Pilot `json:"pilot"`
 }
 type Request struct {
 	ConfirmEmail string           `json:"confirmation_email"`

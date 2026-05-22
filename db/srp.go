@@ -9,7 +9,7 @@ import (
 // system rejestracji pojazdów
 type SRP struct {
 	ID                   primitive.ObjectID `bson:"_id,omitempty"`
-	CongregationID       primitive.ObjectID `bson:"zbor_id"`
+	CongregationID       primitive.ObjectID `bson:"congregation_id"`
 	PassNr               int                `bson:"pass_nr"`
 	Car1                 CarInfo            `bson:"car1"`
 	Car2                 *CarInfo           `bson:"car2,omitempty"`

@@ -48,7 +48,7 @@ func Post_FindPassID(w http.ResponseWriter, r *http.Request) {
 
 	var srp db.SRP
 	filter := bson.M{
-		"zbor_id": congregation.ID,
+		"congregation_id": congregation.ID,
 		"$or": bson.A{
 			bson.M{"car1.regnum": requestData.RegNum},
 			bson.M{"car2.regnum": requestData.RegNum},

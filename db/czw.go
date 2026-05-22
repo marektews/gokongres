@@ -11,7 +11,7 @@ type Czw struct {
 	NrRej        string             `bson:"nr_rej"`
 	Phone        string             `bson:"phone"`
 	NrIdent      int                `bson:"nr_ident"`
-	ZborID       int                `bson:"zbor_id"`
+	ZborID       int                `bson:"congregation_id"`
 	Issuing      time.Time          `bson:"issuing"`
 	Cancellation *time.Time         `bson:"cancellation,omitempty"`
 }

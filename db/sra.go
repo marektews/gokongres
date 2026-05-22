@@ -7,7 +7,7 @@ import (
 // system rejestracji autokarów
 type SRA struct {
 	ID               primitive.ObjectID  `bson:"_id,omitempty"`
-	CongregationID   primitive.ObjectID  `bson:"zbor_id"`
+	CongregationID   primitive.ObjectID  `bson:"congregation_id"`
 	Bus              Bus                 `bson:"bus"`
 	Lp               *int                `bson:"lp,omitempty"`
 	Canceled         bool                `bson:"canceled"`
@@ -22,7 +22,7 @@ type SRA struct {
 // wyjątek - sygnalizowanie, że zbór nie wynajmuje autokaru
 type SRA_NoBus struct {
 	ID             primitive.ObjectID `bson:"_id,omitempty"`
-	CongregationID primitive.ObjectID `bson:"zbor_id"`
+	CongregationID primitive.ObjectID `bson:"congregation_id"`
 	NoBus          bool               `bson:"nobus"`
 	Timestamp      primitive.DateTime `bson:"timestamp"`
 }

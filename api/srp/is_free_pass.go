@@ -37,7 +37,7 @@ func Get_IsFreePass(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	count, err := collSRP.CountDocuments(r.Context(), bson.M{"zbor_id": congregation.ID})
+	count, err := collSRP.CountDocuments(r.Context(), bson.M{"congregation_id": congregation.ID})
 	if err != nil {
 		log.Println("Error occurred while counting SRP documents:", err)
 		http.Error(w, "Error occurred while counting SRP documents", http.StatusInternalServerError)

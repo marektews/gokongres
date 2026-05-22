@@ -45,7 +45,7 @@ func Get_SraList(w http.ResponseWriter, r *http.Request) {
 	// budowanie listy SRA dla podanej tury
 	type Response struct {
 		SraID            primitive.ObjectID `json:"id"`
-		CongregationID   primitive.ObjectID `json:"zbor_id"`
+		CongregationID   primitive.ObjectID `json:"congregation_id"`
 		Bus              db.Bus             `json:"bus"`
 		Lp               *int               `json:"lp,omitempty"`
 		Canceled         bool               `json:"canceled"`

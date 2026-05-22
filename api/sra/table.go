@@ -107,26 +107,28 @@ func Get_Table(w http.ResponseWriter, r *http.Request) {
 		}
 		pilotCur.Close(r.Context())
 
-		responseData := ResponseData{
-			Id:        sra.ID.Hex(),
-			Info:      "",
-			Timestamp: sra.Timestamp.Time().Format("2006-01-02 15:04:05"),
-			Congregation: CongregationData{
-				Name:   congregation.Name,
-				Number: congregation.Number,
-				Lang:   congregation.Lang,
-				Tura:   congregation.Tura,
-			},
-			Pilot1: pilots[0],
-		}
-		if len(pilots) > 1 {
-			responseData.Pilot2 = &pilots[1]
-		}
-		if len(pilots) > 2 {
-			responseData.Pilot3 = &pilots[2]
-		}
+		if len(pilots) > 0 {
+			responseData := ResponseData{
+				Id:        sra.ID.Hex(),
+				Info:      "",
+				Timestamp: sra.Timestamp.Time().Format("2006-01-02 15:04:05"),
+				Congregation: CongregationData{
+					Name:   congregation.Name,
+					Number: congregation.Number,
+					Lang:   congregation.Lang,
+					Tura:   congregation.Tura,
+				},
+				Pilot1: pilots[0],
+			}
+			if len(pilots) > 1 {
+				responseData.Pilot2 = &pilots[1]
+			}
+			if len(pilots) > 2 {
+				responseData.Pilot3 = &pilots[2]
+			}
 
-		response = append(response, responseData)
+			response = append(response, responseData)
+		}
 	}
 
 	err = json.NewEncoder(w).Encode(response)

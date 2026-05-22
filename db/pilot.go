@@ -3,8 +3,8 @@ package db
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type Phone struct {
-	CountryCode string `bson:"country_code"`
-	Number      string `bson:"number"`
+	CountryCode string `bson:"country_code" json:"country_code"`
+	Number      string `bson:"number" json:"number"`
 }
 
 // dane pilota autokaru

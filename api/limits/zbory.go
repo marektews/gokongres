@@ -51,9 +51,9 @@ func Get_Zbory(w http.ResponseWriter, r *http.Request) {
 }
 
 // SetZboryLimit request body
-// {"zbor_id": "<hex>", "plimit": 123}
+// {"congregation_id": "<hex>", "plimit": 123}
 type setZborLimitReq struct {
-	ZborID string `json:"zbor_id"`
+	ZborID string `json:"congregation_id"`
 	Plimit int    `json:"plimit"`
 }
 
@@ -76,7 +76,7 @@ func Post_SetZboryLimit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid id", http.StatusBadRequest)
 			return
 		} else {
-			log.Printf("Set_ZboryLimit: error updating limit for zbor_id %s: %v", req.ZborID, err)
+			log.Printf("Set_ZboryLimit: error updating limit for congregation_id %s: %v", req.ZborID, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
