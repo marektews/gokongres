@@ -51,13 +51,13 @@ func Get_Table(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type Bus struct {
-		Lp               int     `json:"lp"`
-		Prefix           string  `json:"prefix"`
-		StaticIdentifier *string `json:"static_identifier,omitempty"`
-		Type             string  `json:"type"`
-		Distance         *int    `json:"distance,omitempty"`
-		ParkingMode      *string `json:"parking_mode,omitempty"`
+	type BusData struct {
+		Lp               int    `json:"lp"`
+		Prefix           string `json:"prefix"`
+		StaticIdentifier string `json:"static_identifier"`
+		Type             string `json:"type"`
+		Distance         string `json:"distance"`
+		ParkingMode      string `json:"parking_mode"`
 	}
 	type CongregationData struct {
 		Name   string `json:"name"`
@@ -70,6 +70,7 @@ func Get_Table(w http.ResponseWriter, r *http.Request) {
 		Info         string           `json:"info"`
 		Timestamp    string           `json:"timestamp"`
 		Congregation CongregationData `json:"zbor"`
+		Bus          BusData          `json:"bus"`
 		Pilot1       db.Pilot         `json:"pilot1"`
 		Pilot2       *db.Pilot        `json:"pilot2,omitempty"`
 		Pilot3       *db.Pilot        `json:"pilot3,omitempty"`
@@ -107,16 +108,37 @@ func Get_Table(w http.ResponseWriter, r *http.Request) {
 		}
 		pilotCur.Close(r.Context())
 
+		safeString := func(s *string) string {
+			if s != nil {
+				return *s
+			}
+			return ""
+		}
+		safeInt := func(v *int) int {
+			if v != nil {
+				return *v
+			}
+			return 0
+		}
+
 		if len(pilots) > 0 {
 			responseData := ResponseData{
 				Id:        sra.ID.Hex(),
-				Info:      "",
+				Info:      safeString(sra.Info),
 				Timestamp: sra.Timestamp.Time().Format("2006-01-02 15:04:05"),
 				Congregation: CongregationData{
 					Name:   congregation.Name,
 					Number: congregation.Number,
 					Lang:   congregation.Lang,
 					Tura:   congregation.Tura,
+				},
+				Bus: BusData{
+					Lp:               safeInt(sra.Lp),
+					Prefix:           "",
+					StaticIdentifier: safeString(sra.StaticIdentifier),
+					Type:             sra.Bus.Type,
+					Distance:         sra.Bus.Distance,
+					ParkingMode:      sra.Bus.ParkingMode,
 				},
 				Pilot1: pilots[0],
 			}

@@ -8,14 +8,19 @@ import (
 )
 
 func Send_By_Postfix(to []string, subject string, body string) {
-	client, err := smtp.Dial("localhost:25")
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpFrom := os.Getenv("SMTP_FROM")
+
+	server := smtpHost + ":" + smtpPort
+
+	client, err := smtp.Dial(server)
 	if err != nil {
 		log.Println("Dial to postfix error:", err)
 		return
 	}
 	defer client.Close()
 
-	smtpFrom := os.Getenv("SMTP_FROM")
 	err = client.Mail(smtpFrom)
 	if err != nil {
 		log.Println("Postfix client mail from error:", err)
