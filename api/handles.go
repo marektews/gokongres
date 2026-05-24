@@ -92,8 +92,9 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/sra/search/congregations/{pattern}", sra.Get_SearchCongregationsByPattern)
 	r.HandleFunc("/sra/submit/bus", sra.Post_SubmitBus)
 	r.HandleFunc("PUT /sra/submit/nobus/{congregation_name}", sra.Put_SubmitNoBus)
-	r.HandleFunc("/sra/check_pilot_duplicate", sra.Post_IsPilotDuplicate)
+	r.HandleFunc("POST /sra/check_pilot_duplicate", sra.Post_IsPilotDuplicate)
 	r.HandleFunc("/sra/table", sra.Get_Table)
+	r.HandleFunc("/sra/save", sra.Post_Save)
 
 	// srp endpoints (4 z 12)
 	r.HandleFunc("/srp/zbory", srp.Get_CongregationList)

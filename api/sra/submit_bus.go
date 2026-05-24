@@ -58,19 +58,10 @@ func Post_SubmitBus(w http.ResponseWriter, r *http.Request) {
 	sra.Bus = req.Registration.Bus
 
 	// dane pilotów
-	res := db.Collection("pilots").FindOne(r.Context(), bson.M{"fn": req.Registration.Pilot[0].FirstName, "ln": req.Registration.Pilot[0].LastName, "email": req.Registration.Pilot[0].Email})
+	res := db.Collection("pilots").FindOne(r.Context(), req.Registration.Pilot[0])
 	if res.Err() != nil {
 		// jeśli pilot nie istnieje, tworzymy nowy rekord w bazie danych
-		newPilot := db.Pilot{
-			FirstName: req.Registration.Pilot[0].FirstName,
-			LastName:  req.Registration.Pilot[0].LastName,
-			Email:     req.Registration.Pilot[0].Email,
-			Phone: db.Phone{
-				CountryCode: req.Registration.Pilot[0].Phone.CountryCode,
-				Number:      req.Registration.Pilot[0].Phone.Number,
-			},
-		}
-		result, err := db.Collection("pilots").InsertOne(r.Context(), newPilot)
+		result, err := db.Collection("pilots").InsertOne(r.Context(), req.Registration.Pilot[0])
 		if err != nil {
 			log.Printf("Error inserting new pilot into database: %v", err)
 			http.Error(w, "Error saving pilot information", http.StatusInternalServerError)
@@ -90,21 +81,13 @@ func Post_SubmitBus(w http.ResponseWriter, r *http.Request) {
 		sra.Pilot1ID = pilot.ID
 		log.Printf("Found existing pilot with ID: %s", pilot.ID.Hex())
 	}
+
 	if !req.Registration.OnePilot {
 		// pilot 2 jest opcjonalny, więc sprawdzamy, czy został podany
-		res := db.Collection("pilots").FindOne(r.Context(), bson.M{"fn": req.Registration.Pilot[1].FirstName, "ln": req.Registration.Pilot[1].LastName, "email": req.Registration.Pilot[1].Email})
+		res := db.Collection("pilots").FindOne(r.Context(), req.Registration.Pilot[1])
 		if res.Err() != nil {
 			// jeśli pilot nie istnieje, tworzymy nowy rekord w bazie danych
-			newPilot := db.Pilot{
-				FirstName: req.Registration.Pilot[1].FirstName,
-				LastName:  req.Registration.Pilot[1].LastName,
-				Email:     req.Registration.Pilot[1].Email,
-				Phone: db.Phone{
-					CountryCode: req.Registration.Pilot[1].Phone.CountryCode,
-					Number:      req.Registration.Pilot[1].Phone.Number,
-				},
-			}
-			result, err := db.Collection("pilots").InsertOne(r.Context(), newPilot)
+			result, err := db.Collection("pilots").InsertOne(r.Context(), req.Registration.Pilot[1])
 			if err != nil {
 				log.Printf("Error inserting new pilot 2 into database: %v", err)
 				http.Error(w, "Error saving pilot 2 information", http.StatusInternalServerError)
@@ -126,19 +109,9 @@ func Post_SubmitBus(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// pilot 3 jest opcjonalny, więc sprawdzamy, czy został podany
-		res = db.Collection("pilots").FindOne(r.Context(), bson.M{"fn": req.Registration.Pilot[2].FirstName, "ln": req.Registration.Pilot[2].LastName, "email": req.Registration.Pilot[2].Email})
+		res = db.Collection("pilots").FindOne(r.Context(), req.Registration.Pilot[2])
 		if res.Err() != nil {
-			// jeśli pilot nie istnieje, tworzymy nowy rekord w bazie danych
-			newPilot := db.Pilot{
-				FirstName: req.Registration.Pilot[2].FirstName,
-				LastName:  req.Registration.Pilot[2].LastName,
-				Email:     req.Registration.Pilot[2].Email,
-				Phone: db.Phone{
-					CountryCode: req.Registration.Pilot[2].Phone.CountryCode,
-					Number:      req.Registration.Pilot[2].Phone.Number,
-				},
-			}
-			result, err := db.Collection("pilots").InsertOne(r.Context(), newPilot)
+			result, err := db.Collection("pilots").InsertOne(r.Context(), req.Registration.Pilot[2])
 			if err != nil {
 				log.Printf("Error inserting new pilot 3 into database: %v", err)
 				http.Error(w, "Error saving pilot 3 information", http.StatusInternalServerError)
@@ -171,6 +144,7 @@ func Post_SubmitBus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Insert SRA: %+v", sra)
 	_, err = coll.InsertOne(r.Context(), sra)
 	if err != nil {
 		log.Printf("Error inserting SRA submission into database: %v", err)

@@ -44,6 +44,8 @@ func Post_IsPilotDuplicate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("Is pilot duplicate:", count, phone)
+
 	if count == 0 {
 		w.WriteHeader(http.StatusOK)
 	} else {

@@ -5,6 +5,7 @@ import (
 	"gokongres/db"
 	"log"
 	"net/http"
+	"slices"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -36,47 +37,75 @@ func Get_Table(w http.ResponseWriter, r *http.Request) {
 	}
 
 	optsSRA := options.Find().SetSort(bson.M{"timestamp": -1}) // Sortowanie malejąco po dacie utworzenia
-	cur, err := collSRA.Find(r.Context(), bson.M{}, optsSRA)
+
+	curNoBus, err := collSRA.Find(r.Context(), bson.M{"nobus": bson.M{"$exists": true, "$ne": false}}, optsSRA)
 	if err != nil {
 		log.Println("Błąd: Nie można uzyskać danych z kolekcji SRA", err)
 		http.Error(w, "Błąd: Nie można uzyskać danych z kolekcji SRA", http.StatusInternalServerError)
 		return
 	}
-	defer cur.Close(r.Context())
+	defer curNoBus.Close(r.Context())
 
-	var sraTableData []db.SRA
-	if err := cur.All(r.Context(), &sraTableData); err != nil {
+	var sraNoBusTable []db.SRA_NoBus
+	if err := curNoBus.All(r.Context(), &sraNoBusTable); err != nil {
 		log.Println("Błąd: Nie można uzyskać danych z kolekcji SRA", err)
 		http.Error(w, "Błąd: Nie można uzyskać danych z kolekcji SRA", http.StatusInternalServerError)
 		return
 	}
 
-	type BusData struct {
-		Lp               int    `json:"lp"`
-		Prefix           string `json:"prefix"`
-		StaticIdentifier string `json:"static_identifier"`
-		Type             string `json:"type"`
-		Distance         string `json:"distance"`
-		ParkingMode      string `json:"parking_mode"`
+	curHasBus, err := collSRA.Find(r.Context(), bson.M{"nobus": bson.M{"$exists": false}}, optsSRA)
+	if err != nil {
+		log.Println("Błąd: Nie można uzyskać danych z kolekcji SRA", err)
+		http.Error(w, "Błąd: Nie można uzyskać danych z kolekcji SRA", http.StatusInternalServerError)
+		return
 	}
-	type CongregationData struct {
-		Name   string `json:"name"`
-		Number int    `json:"number"`
-		Lang   string `json:"lang"`
-		Tura   int    `json:"tura"`
+	defer curHasBus.Close(r.Context())
+
+	var sraBusTable []db.SRA
+	if err := curHasBus.All(r.Context(), &sraBusTable); err != nil {
+		log.Println("Błąd: Nie można uzyskać danych z kolekcji SRA", err)
+		http.Error(w, "Błąd: Nie można uzyskać danych z kolekcji SRA", http.StatusInternalServerError)
+		return
 	}
-	type ResponseData struct {
-		Id           string           `json:"id"`
-		Info         string           `json:"info"`
-		Timestamp    string           `json:"timestamp"`
-		Congregation CongregationData `json:"zbor"`
-		Bus          BusData          `json:"bus"`
-		Pilot1       db.Pilot         `json:"pilot1"`
-		Pilot2       *db.Pilot        `json:"pilot2,omitempty"`
-		Pilot3       *db.Pilot        `json:"pilot3,omitempty"`
+
+	type HasBusData struct {
+		Id           string          `json:"id"`
+		Info         string          `json:"info"`
+		Timestamp    string          `json:"timestamp"`
+		Congregation db.Congregation `json:"congregation"`
+		Bus          BusData         `json:"bus"`
+		Pilot1       db.Pilot        `json:"pilot1"`
+		Pilot2       *db.Pilot       `json:"pilot2,omitempty"`
+		Pilot3       *db.Pilot       `json:"pilot3,omitempty"`
 	}
-	var response []ResponseData
-	for _, sra := range sraTableData {
+
+	type NoBusData struct {
+		Id           string          `json:"id"`
+		Congregation db.Congregation `json:"congregation"`
+		NoBus        bool            `json:"nobus"`
+		Timestamp    string          `json:"timestamp"`
+	}
+
+	type ResponseItem struct {
+		NoBus  *NoBusData  `json:"nobus,omitempty"`
+		HasBus *HasBusData `json:"hasbus,omitempty"`
+	}
+
+	safeString := func(s *string) string {
+		if s != nil {
+			return *s
+		}
+		return ""
+	}
+	safeInt := func(v *int) int {
+		if v != nil {
+			return *v
+		}
+		return 0
+	}
+
+	var response []ResponseItem
+	for _, sra := range sraBusTable {
 		var congregation db.Congregation
 		err = collCongr.FindOne(r.Context(), bson.M{"_id": sra.CongregationID}).Decode(&congregation)
 		if err != nil {
@@ -108,49 +137,63 @@ func Get_Table(w http.ResponseWriter, r *http.Request) {
 		}
 		pilotCur.Close(r.Context())
 
-		safeString := func(s *string) string {
-			if s != nil {
-				return *s
-			}
-			return ""
-		}
-		safeInt := func(v *int) int {
-			if v != nil {
-				return *v
-			}
-			return 0
-		}
-
 		if len(pilots) > 0 {
-			responseData := ResponseData{
-				Id:        sra.ID.Hex(),
-				Info:      safeString(sra.Info),
-				Timestamp: sra.Timestamp.Time().Format("2006-01-02 15:04:05"),
-				Congregation: CongregationData{
-					Name:   congregation.Name,
-					Number: congregation.Number,
-					Lang:   congregation.Lang,
-					Tura:   congregation.Tura,
+			idx := slices.IndexFunc(pilots, func(p db.Pilot) bool {
+				return p.ID == sra.Pilot1ID
+			})
+
+			responseItem := ResponseItem{
+				HasBus: &HasBusData{
+					Id:           sra.ID.Hex(),
+					Info:         safeString(sra.Info),
+					Timestamp:    sra.Timestamp.Time().Format("2006-01-02 15:04:05"),
+					Congregation: congregation,
+					Bus: BusData{
+						Lp:               safeInt(sra.Lp),
+						Prefix:           "", // sra.Prefix
+						StaticIdentifier: safeString(sra.StaticIdentifier),
+						Type:             sra.Bus.Type,
+						Distance:         sra.Bus.Distance,
+						ParkingMode:      sra.Bus.ParkingMode,
+					},
+					Pilot1: pilots[idx],
 				},
-				Bus: BusData{
-					Lp:               safeInt(sra.Lp),
-					Prefix:           "",
-					StaticIdentifier: safeString(sra.StaticIdentifier),
-					Type:             sra.Bus.Type,
-					Distance:         sra.Bus.Distance,
-					ParkingMode:      sra.Bus.ParkingMode,
-				},
-				Pilot1: pilots[0],
 			}
-			if len(pilots) > 1 {
-				responseData.Pilot2 = &pilots[1]
+			if sra.Pilot2ID != nil {
+				idx := slices.IndexFunc(pilots, func(p db.Pilot) bool {
+					return p.ID == *sra.Pilot2ID
+				})
+				responseItem.HasBus.Pilot2 = &pilots[idx]
 			}
-			if len(pilots) > 2 {
-				responseData.Pilot3 = &pilots[2]
+			if sra.Pilot3ID != nil {
+				idx := slices.IndexFunc(pilots, func(p db.Pilot) bool {
+					return p.ID == *sra.Pilot3ID
+				})
+				responseItem.HasBus.Pilot3 = &pilots[idx]
 			}
 
-			response = append(response, responseData)
+			response = append(response, responseItem)
 		}
+	}
+
+	for _, sra := range sraNoBusTable {
+		var congregation db.Congregation
+		err = collCongr.FindOne(r.Context(), bson.M{"_id": sra.CongregationID}).Decode(&congregation)
+		if err != nil {
+			log.Println("Błąd: Nie można uzyskać danych z kolekcji congregations", err)
+			http.Error(w, "Błąd: Nie można uzyskać danych z kolekcji congregations", http.StatusInternalServerError)
+			return
+		}
+
+		responseItem := ResponseItem{
+			NoBus: &NoBusData{
+				Id:           sra.ID.Hex(),
+				Congregation: congregation,
+				Timestamp:    sra.Timestamp.Time().Format("2006-01-02 15:04:05"),
+			},
+		}
+
+		response = append(response, responseItem)
 	}
 
 	err = json.NewEncoder(w).Encode(response)
