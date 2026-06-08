@@ -113,16 +113,16 @@ func Schedule(w http.ResponseWriter, r *http.Request) {
 		si := ScheduleInfo{
 			SortOrder: rja.SectorOrder,
 			D1: Times{
-				Arrive:    rja.A1.Format("15:04"),
-				Departure: rja.D1.Format("15:04"),
+				Arrive:    *rja.A1,
+				Departure: *rja.D1,
 			},
 			D2: Times{
-				Arrive:    rja.A2.Format("15:04"),
-				Departure: rja.D2.Format("15:04"),
+				Arrive:    *rja.A2,
+				Departure: *rja.D2,
 			},
 			D3: Times{
-				Arrive:    rja.A3.Format("15:04"),
-				Departure: rja.D3.Format("15:04"),
+				Arrive:    *rja.A3,
+				Departure: *rja.D3,
 			},
 			Bus: BusInfo{
 				Lp:    sra.Lp,

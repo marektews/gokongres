@@ -1,6 +1,7 @@
 package buffer
 
 import (
+	"encoding/json"
 	"gokongres/db"
 	"log"
 	"net/http"
@@ -16,8 +17,7 @@ func Get_FullInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	log.Println("buffer.GetFullInfo called")
 
-	// tura := db.WhichTura(r.Context())
-	terminal_id := r.PathValue("terminal_id")
+	terminal_name := r.PathValue("terminal_name")
 
 	coll := db.Collection("terminals")
 	if coll == nil {
@@ -28,7 +28,7 @@ func Get_FullInfo(w http.ResponseWriter, r *http.Request) {
 
 	// opis bufora
 	var terminal db.Terminal
-	err := coll.FindOne(r.Context(), bson.M{"_id": terminal_id}).Decode(&terminal)
+	err := coll.FindOne(r.Context(), bson.M{"name": terminal_name}).Decode(&terminal)
 	if err != nil {
 		log.Println("Error decoding terminal document:", err)
 		http.Error(w, "Error decoding terminal document", http.StatusInternalServerError)
@@ -38,4 +38,10 @@ func Get_FullInfo(w http.ResponseWriter, r *http.Request) {
 	// sektory współpracujące z buforem
 	// buffer.Terminals
 
+	err = json.NewEncoder(w).Encode(terminal)
+	if err != nil {
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }

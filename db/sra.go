@@ -9,7 +9,7 @@ type SRA struct {
 	ID             primitive.ObjectID  `bson:"_id,omitempty" json:"-"`
 	CongregationID primitive.ObjectID  `bson:"congregation_id" json:"congregation_id"`
 	Bus            Bus                 `bson:"bus" json:"bus"`
-	Lp             *int                `bson:"lp,omitempty" json:"lp"`
+	Lp             *int                `bson:"lp,omitempty" json:"lp"` // numeracja jeśli zbór wynajmuje więcej niż jeden autokar, np. 1, 2, 3 - do przypisania ręcznie, nie jest generowana automatycznie
 	Canceled       bool                `bson:"canceled" json:"canceled"`
 	Pilot1ID       primitive.ObjectID  `bson:"pilot1_id" json:"pilot1_id"`
 	Pilot2ID       *primitive.ObjectID `bson:"pilot2_id,omitempty" json:"pilot2_id"`

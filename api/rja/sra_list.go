@@ -17,15 +17,24 @@ func Get_SraList(w http.ResponseWriter, r *http.Request) {
 	turaId := r.PathValue("tura_id")
 	log.Printf("Getting SRA list for tura ID: %s", turaId)
 
+	// pobieranie listy zborów które przypisane są do tej tury
+	congregations, err := db.GetCongregationsForTura(r.Context(), turaId)
+	if err != nil {
+		log.Printf("Error getting congregations for tura ID: %s, error: %v", turaId, err)
+		http.Error(w, "Error getting congregations for tura", http.StatusInternalServerError)
+		return
+	}
+
 	// pobieranie z bazy danych listy SRA
-	coll := db.Collection("sra")
-	if coll == nil {
+	collSRA := db.Collection("sra")
+	if collSRA == nil {
 		log.Println("Collection 'sra' not found")
 		http.Error(w, "Collection 'sra' not found", http.StatusInternalServerError)
 		return
 	}
 
-	cur, err := coll.Find(r.Context(), bson.M{"tura": turaId})
+	// pobieraj wszystkie aktywne SRA, które są przypisane do zborów z tej tury
+	cur, err := collSRA.Find(r.Context(), bson.M{"bus": bson.M{"$exists": true}, "congregation_id": bson.M{"$in": db.GetCongregationIDs(congregations)}})
 	if err != nil {
 		log.Printf("Error finding SRA for tura ID: %v, error: %v", turaId, err)
 		http.Error(w, "Error finding SRA", http.StatusInternalServerError)
@@ -40,7 +49,7 @@ func Get_SraList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error decoding SRA list", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("SRA list: %v", sraList)
+	log.Printf("SRA list: %+v", sraList)
 
 	// budowanie listy SRA dla podanej tury
 	type Response struct {

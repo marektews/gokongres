@@ -3,7 +3,6 @@ package rja
 import (
 	"encoding/json"
 	"gokongres/db"
-	"gokongres/helpers"
 	"log"
 	"net/http"
 	"strconv"
@@ -25,8 +24,8 @@ func Get_BusesOfSector(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sid := r.PathValue("sid")
-	osid, err := primitive.ObjectIDFromHex(sid)
+	sector_id := r.PathValue("sector_id")
+	sectorID, err := primitive.ObjectIDFromHex(sector_id)
 	if err != nil {
 		log.Printf("Invalid sector ID: %v", err)
 		http.Error(w, "Invalid sector ID", http.StatusBadRequest)
@@ -41,11 +40,11 @@ func Get_BusesOfSector(w http.ResponseWriter, r *http.Request) {
 	}
 
 	collation := options.Collation{Locale: "pl", NumericOrdering: true, Strength: 1}
-	sortOrder := bson.D{{Key: "sid", Value: 1}}
+	sortOrder := bson.D{{Key: "sector_order", Value: 1}}
 	opts := options.Find().SetSort(sortOrder).SetCollation(&collation)
-	cur, err := coll.Find(r.Context(), bson.M{"sid": osid, "tura_id": turaID}, opts)
+	cur, err := coll.Find(r.Context(), bson.M{"sector_id": sectorID}, opts)
 	if err != nil {
-		log.Printf("Error finding buses for sector %s: %v", sid, err)
+		log.Printf("Error finding buses for sector %s: %v", sector_id, err)
 		http.Error(w, "Error finding buses for sector", http.StatusInternalServerError)
 		return
 	}
@@ -83,9 +82,15 @@ func Get_BusesOfSector(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var congregation db.Congregation
-		err = db.Collection("congregations").FindOne(r.Context(), bson.M{"_id": sra.CongregationID, "tura": rja.SectorOrder}).Decode(&congregation)
+		congregationFilter := bson.M{
+			"$and": []bson.M{
+				{"_id": sra.CongregationID},
+				{"$or": []bson.M{{"tura": nil}, {"tura": turaID}}},
+			},
+		}
+		err = db.Collection("congregations").FindOne(r.Context(), congregationFilter).Decode(&congregation)
 		if err != nil {
-			log.Printf("Error finding congregation for SRA %s: %v", sra.ID.Hex(), err)
+			// zbór nie jest przypisany do tej tury, pomijamy ten RJA
 		} else {
 			buses = append(buses, BusInfo{
 				BusID:       rja.ID,
@@ -93,12 +98,12 @@ func Get_BusesOfSector(w http.ResponseWriter, r *http.Request) {
 				SID:         rja.SectorID,
 				SectorOrder: rja.SectorOrder,
 				Canceled:    sra.Canceled,
-				D1:          helpers.FormatTime(rja.D1),
-				D2:          helpers.FormatTime(rja.D2),
-				D3:          helpers.FormatTime(rja.D3),
-				A1:          helpers.FormatTime(rja.A1),
-				A2:          helpers.FormatTime(rja.A2),
-				A3:          helpers.FormatTime(rja.A3),
+				D1:          *rja.D1,
+				D2:          *rja.D2,
+				D3:          *rja.D3,
+				A1:          *rja.A1,
+				A2:          *rja.A2,
+				A3:          *rja.A3,
 			})
 		}
 	}

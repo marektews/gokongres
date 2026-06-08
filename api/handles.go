@@ -63,9 +63,9 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/monitoring/terminals", monitoring.Get_TerminalsList)
 
 	// buffer endpoints (2 z 7)
-	r.HandleFunc("/buffer/all", buffer.Get_AllShortList)                // GET
-	r.HandleFunc("/buffer/fullinfo/{terminal_id}", buffer.Get_FullInfo) // GET
-	r.HandleFunc("/buffer/states/{terminal_id}", buffer.Get_States)     // GET
+	r.HandleFunc("GET /buffer/all", buffer.Get_AllShortList)                  // GET
+	r.HandleFunc("GET /buffer/fullinfo/{terminal_name}", buffer.Get_FullInfo) // GET
+	r.HandleFunc("GET /buffer/states/{terminal_name}", buffer.Get_States)     // GET
 	// r.HandleFunc("/buffer/notify/nobus/{rja_id}", buffer.) // GET
 	// r.HandleFunc("/buffer/notify/inbuffer/{rja_id}", buffer.) // GET
 	// r.HandleFunc("/buffer/notify/secondcircle/{rja_id}", buffer.) // GET
@@ -81,12 +81,12 @@ func RegisterHandlers(host string, port int) {
 
 	// rja endpoints (7 z 9)
 	r.HandleFunc("/rja/zbory", rja.Get_CongregationList)
-	r.HandleFunc("/rja/sra/{tura_id}", rja.Get_SraList)
+	r.HandleFunc("GET /rja/sra/{tura_id}", rja.Get_SraList)
 	r.HandleFunc("/rja/terminals", rja.Get_TerminalsList)
 	r.HandleFunc("/rja/sectors/{terminal_id}", rja.Get_SectorsList)
-	r.HandleFunc("/rja/buses/{sid}/{tura_id}", rja.Get_BusesOfSector)
+	r.HandleFunc("/rja/buses/{sector_id}/{tura_id}", rja.Get_BusesOfSector)
 	r.HandleFunc("/rja/buses/used/{tura_id}", rja.Get_BusesUsed)
-	r.HandleFunc("/rja/buses/save", rja.Get_BusesSave)
+	r.HandleFunc("POST /rja/buses/save", rja.Get_BusesSave)
 
 	// sra endpoints (3 z 7)
 	r.HandleFunc("/sra/search/congregations/{pattern}", sra.Get_SearchCongregationsByPattern)
