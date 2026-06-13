@@ -5,6 +5,7 @@ import (
 	"gokongres/db"
 	"log"
 	"net/http"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -13,14 +14,11 @@ import (
 func Get_CongregationList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	type Request struct {
-		TuraID int `json:"tura"`
-	}
-	var req Request
-	err := json.NewDecoder(r.Body).Decode(&req)
+	tura_id := r.PathValue("tura_id")
+	turaID, err := strconv.Atoi(tura_id)
 	if err != nil {
-		log.Println("Error decoding request body:", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		log.Println("Error converting tura_id to integer:", err)
+		http.Error(w, "Invalid tura_id", http.StatusBadRequest)
 		return
 	}
 
@@ -34,9 +32,9 @@ func Get_CongregationList(w http.ResponseWriter, r *http.Request) {
 	var congregations []db.Congregation
 	sortOrder := bson.D{{Key: "lang", Value: 1}, {Key: "name", Value: 1}}
 	opts := options.Find().SetSort(sortOrder)
-	cursor, err := coll.Find(r.Context(), bson.M{"tura": req.TuraID}, opts)
+	cursor, err := coll.Find(r.Context(), bson.M{"tura": turaID}, opts)
 	if err != nil {
-		log.Printf("Error finding congregations for tura ID: %v, error: %v", req.TuraID, err)
+		log.Printf("Error finding congregations for tura ID: %v, error: %v", turaID, err)
 		http.Error(w, "Error finding congregations", http.StatusInternalServerError)
 		return
 	}

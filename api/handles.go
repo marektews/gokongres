@@ -80,7 +80,7 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/ia/download/{sra_id}", ia.Get_Download)
 
 	// rja endpoints (7 z 9)
-	r.HandleFunc("/rja/zbory", rja.Get_CongregationList)
+	r.HandleFunc("GET /rja/zbory/{tura_id}", rja.Get_CongregationList)
 	r.HandleFunc("GET /rja/sra/{tura_id}", rja.Get_SraList)
 	r.HandleFunc("/rja/terminals", rja.Get_TerminalsList)
 	r.HandleFunc("/rja/sectors/{terminal_id}", rja.Get_SectorsList)
