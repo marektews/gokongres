@@ -8,7 +8,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func Get_States(w http.ResponseWriter, r *http.Request) {
@@ -62,22 +61,22 @@ func Get_States(w http.ResponseWriter, r *http.Request) {
 		States:     map[string]BufferState{}, // inicjalizacja → "{}" zamiast null w JSON
 	}
 
-	// najnowszy wpis SOA dla danego RJA
-	collation := options.Collation{Locale: "pl", NumericOrdering: true, Strength: 1}
-	soaSortOrder := bson.D{{Key: "ts", Value: -1}, {Key: "_id", Value: -1}}
-	soaOpts := options.FindOne().SetSort(soaSortOrder).SetCollation(&collation)
-
 	for _, a := range arrived {
 		var soa db.SOA
-		err = soaColl.FindOne(r.Context(), bson.M{"rja_id": a.RJA.ID}, soaOpts).Decode(&soa)
+		err = soaColl.FindOne(r.Context(), bson.M{"rja_id": a.RJA.ID}).Decode(&soa)
 		if err != nil {
 			log.Printf("Error finding SOA for rja_id '%s': %v", a.RJA.ID.Hex(), err)
-			continue // brak wpisu SOA → pomijamy ten autobus
+			continue // brak dokumentu SOA → pomijamy ten autobus
+		}
+
+		last, ok := soa.Latest()
+		if !ok {
+			continue // dokument bez stanów → pomijamy
 		}
 
 		resp.States[a.RJA.ID.Hex()] = BufferState{
-			Status:    soa.Status,
-			Timestamp: soa.Timestamp.Format("02.01.2006 15:04:05"),
+			Status:    last.State,
+			Timestamp: last.Ts.Format("02.01.2006 15:04:05"),
 		}
 	}
 

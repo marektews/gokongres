@@ -63,17 +63,17 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/monitoring/terminals", monitoring.Get_TerminalsList)
 
 	// buffer endpoints (2 z 7)
-	r.HandleFunc("GET /buffer/all", buffer.Get_AllShortList)                  // GET
-	r.HandleFunc("GET /buffer/fullinfo/{terminal_name}", buffer.Get_FullInfo) // GET
-	r.HandleFunc("GET /buffer/states/{terminal_name}", buffer.Get_States)     // GET
-	// r.HandleFunc("/buffer/notify/nobus/{rja_id}", buffer.) // GET
-	// r.HandleFunc("/buffer/notify/inbuffer/{rja_id}", buffer.) // GET
-	// r.HandleFunc("/buffer/notify/secondcircle/{rja_id}", buffer.) // GET
-	// r.HandleFunc("/buffer/notify/sendtosector/{rja_id}", buffer.) // GET
+	r.HandleFunc("GET /buffer/all", buffer.Get_AllShortList)
+	r.HandleFunc("GET /buffer/fullinfo/{terminal_name}", buffer.Get_FullInfo)
+	r.HandleFunc("GET /buffer/states/{terminal_name}", buffer.Get_States)
+	r.HandleFunc("GET /buffer/notify/nobus/{rja_id}", buffer.Get_NoBusNotification)
+	r.HandleFunc("GET /buffer/notify/inbuffer/{rja_id}", buffer.Get_InBufferNotification)
+	r.HandleFunc("GET /buffer/notify/secondcircle/{rja_id}", buffer.Get_SecondCircleNotification)
+	r.HandleFunc("GET /buffer/notify/sendtosector/{rja_id}", buffer.Get_SendToSectorNotification)
 
 	// terminals endpoints
-	r.HandleFunc("/terminals/all", terminals.Get_AllList)
-	r.HandleFunc("/terminals/fullinfo/{terminal_id}", terminals.Get_FullInfo)
+	r.HandleFunc("GET /terminals/all", terminals.Get_AllList)
+	r.HandleFunc("GET /terminals/fullinfo/{terminal_id}", terminals.Get_FullInfo)
 
 	// ia endpoints (0 z 2)
 	r.HandleFunc("/ia/list/{congregation_name}", ia.Get_List)

@@ -62,9 +62,14 @@ func Get_StatesRepo(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		last, ok := soa.Latest()
+		if !ok {
+			continue // dokument bez stanów → pomijamy
+		}
+
 		res[rja.ID] = RJAState{
-			Status:    soa.Status,
-			Timestamp: soa.Timestamp.Format(time.DateTime),
+			Status:    last.State,
+			Timestamp: last.Ts.Format(time.DateTime),
 		}
 	}
 

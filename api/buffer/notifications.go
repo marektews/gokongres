@@ -1,4 +1,4 @@
-package sector
+package buffer
 
 import (
 	"encoding/json"
@@ -9,20 +9,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func Notification_SendToSector(w http.ResponseWriter, r *http.Request) {
+func Get_NoBusNotification(w http.ResponseWriter, r *http.Request) {
+	notification(w, r, "no-bus")
+}
+
+func Get_InBufferNotification(w http.ResponseWriter, r *http.Request) {
+	notification(w, r, "in-buffer")
+}
+
+func Get_SecondCircleNotification(w http.ResponseWriter, r *http.Request) {
+	notification(w, r, "second-circle")
+}
+
+func Get_SendToSectorNotification(w http.ResponseWriter, r *http.Request) {
 	notification(w, r, "send-to-sector")
-}
-
-func Notification_ReadyToLeave(w http.ResponseWriter, r *http.Request) {
-	notification(w, r, "ready-to-leave")
-}
-
-func Notification_OnSector(w http.ResponseWriter, r *http.Request) {
-	notification(w, r, "on-sector")
-}
-
-func Notification_OnRoad(w http.ResponseWriter, r *http.Request) {
-	notification(w, r, "on-the-road")
 }
 
 func notification(w http.ResponseWriter, r *http.Request, status string) {
