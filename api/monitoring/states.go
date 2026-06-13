@@ -55,11 +55,8 @@ func Get_StatesRepo(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var soa db.SOA
-		err = collSOA.FindOne(r.Context(), bson.M{"rja_id": rja.ID}).Decode(&soa)
-		if err != nil {
-			log.Println("Błąd podczas pobierania dokumentu z kolekcji 'soa' dla rja_id", rja.ID, ":", err)
-			http.Error(w, "Błąd podczas pobierania dokumentu z kolekcji 'soa'", http.StatusInternalServerError)
-			continue
+		if err := collSOA.FindOne(r.Context(), bson.M{"rja_id": rja.ID}).Decode(&soa); err != nil {
+			continue // brak dokumentu SOA (autokar bez statusu) → pomijamy
 		}
 
 		last, ok := soa.Latest()

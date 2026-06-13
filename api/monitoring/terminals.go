@@ -14,6 +14,13 @@ import (
 func Get_TerminalsList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	activeTura := db.WhichTura(r.Context())
+	if activeTura == nil {
+		log.Println("Brak aktywnej tury")
+		http.Error(w, "Brak aktywnej tury", http.StatusInternalServerError)
+		return
+	}
+
 	collTerminals := db.Collection("terminals")
 	if collTerminals == nil {
 		log.Println("Błąd połączenia z bazą danych: kolekcja 'terminals' jest nil")
@@ -36,15 +43,11 @@ func Get_TerminalsList(w http.ResponseWriter, r *http.Request) {
 		Id            primitive.ObjectID `json:"id"`
 		BusIdentifier string             `json:"ident"`
 		Name          string             `json:"name"`
-		ZTura         string             `json:"ztura"`
-		Lp            string             `json:"lp"`
-		Tura          string             `json:"tura"`
-		Arrive        string             `json:"arrive"`
-		Departure     string             `json:"departure"`
+		Lp            *int               `json:"lp"`
 	}
 	type SectorInfo struct {
 		Name string    `json:"name"`
-		Rja  []RjaInfo `json:"rja,omitempty"`
+		Rja  []RjaInfo `json:"rja"`
 	}
 	type TerminalInfo struct {
 		Name    string       `json:"name"`
@@ -75,10 +78,11 @@ func Get_TerminalsList(w http.ResponseWriter, r *http.Request) {
 		for _, sector := range terminal.Sectors {
 			sinfo := SectorInfo{
 				Name: sector.Name,
+				Rja:  make([]RjaInfo, 0),
 			}
 
 			opts := options.Find().SetSort(bson.M{
-				"tura": 1,
+				"sector_order": 1,
 			})
 			curRja, err := rjaColl.Find(r.Context(), bson.M{"sector_id": sector.Sid}, opts)
 			if err != nil {
@@ -93,33 +97,33 @@ func Get_TerminalsList(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Błąd podczas dekodowania RJA z bazy danych", http.StatusInternalServerError)
 				return
 			}
-			/*
-				for _, rja := range rjaList {
-					if !arriveToday(rja) {
-						continue
-					}
-
-					sra := getSRAByID(rja.SraID)
-					if sra == nil {
-						log.Printf("Nie znaleziono SRA o ID: %v", rja.SraID)
-						continue
-					}
-
-					congregation := getCongregationByID(sra.CongregationID)
-					if congregation == nil {
-						log.Printf("Nie znaleziono zbory o ID: %v", sra.CongregationID)
-						continue
-					}
-
-					rjaInfo := RjaInfo{
-						Id:            rja.ID,
-						BusIdentifier: db.createShortBusID(&sra, sector.Name, rja.SectorOrder),
-						Name:          congregation.Name,
-					}
-
-					sinfo.Rja = append(sinfo.Rja, rjaInfo)
+			for _, rja := range rjaList {
+				var sra db.SRA
+				if err := db.Collection("sra").FindOne(r.Context(), bson.M{"_id": rja.SraID}).Decode(&sra); err != nil {
+					log.Printf("monitoring: nie znaleziono SRA dla rja %s: %v", rja.ID.Hex(), err)
+					continue
 				}
-			*/
+
+				// zbór musi należeć do aktywnej tury (tura == null oznacza dowolną)
+				congFilter := bson.M{
+					"$and": []bson.M{
+						{"_id": sra.CongregationID},
+						{"$or": []bson.M{{"tura": nil}, {"tura": activeTura.TID}}},
+					},
+				}
+				var cong db.Congregation
+				if err := db.Collection("congregations").FindOne(r.Context(), congFilter).Decode(&cong); err != nil {
+					continue // zbór nie w aktywnej turze → pomijamy
+				}
+
+				sinfo.Rja = append(sinfo.Rja, RjaInfo{
+					Id:            rja.ID,
+					BusIdentifier: db.CreateShortBusID(&sra, sector.Name, rja.SectorOrder),
+					Name:          cong.Name,
+					Lp:            sra.Lp,
+				})
+			}
+
 			resp.Sectors = append(resp.Sectors, sinfo)
 		}
 

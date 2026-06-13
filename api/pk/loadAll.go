@@ -7,20 +7,21 @@ import (
 	"net/http"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Get_LoadAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	coll := db.Collection("department_pk")
+	coll := db.Collection("departments_pk")
 	if coll == nil {
-		log.Printf("Error: Database collection 'department_pk' not found")
-		http.Error(w, "Database collection 'department_pk' not found", http.StatusInternalServerError)
+		log.Printf("Error: Database collection 'departments_pk' not found")
+		http.Error(w, "Database collection 'departments_pk' not found", http.StatusInternalServerError)
 		return
 	}
 
-	cur, err := coll.Find(r.Context(), nil)
+	cur, err := coll.Find(r.Context(), bson.M{})
 	if err != nil {
 		log.Printf("Error fetching department PKs: %v", err)
 		http.Error(w, "Error fetching department PKs", http.StatusInternalServerError)
@@ -35,13 +36,13 @@ func Get_LoadAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type Response struct {
-		ID           primitive.ObjectID `bson:"_id,omitempty"`
-		DepartmentID primitive.ObjectID `bson:"dzial_id"`
-		PassNr       int                `bson:"pass_nr"`
-		Regnum1      string             `bson:"regnum1"`
-		Regnum2      *string            `bson:"regnum2,omitempty"`
-		Regnum3      *string            `bson:"regnum3,omitempty"`
-		Registered   string             `bson:"registered"`
+		ID           primitive.ObjectID `json:"id"`
+		DepartmentID primitive.ObjectID `json:"dep_id"`
+		PassNr       int                `json:"pass_nr"`
+		Regnum1      string             `json:"regnum1"`
+		Regnum2      *string            `json:"regnum2,omitempty"`
+		Regnum3      *string            `json:"regnum3,omitempty"`
+		Registered   string             `json:"registered"`
 	}
 	resp := make([]Response, 0)
 
