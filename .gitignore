@@ -34,3 +34,5 @@ go.work.sum
 templates/
 
 ic26-parking-*
+API_REPORT.md
+RAPORT_ZGODNOSCI_API.md

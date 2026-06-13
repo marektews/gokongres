@@ -5,15 +5,14 @@ import (
 	"gokongres/db"
 	"log"
 	"net/http"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func Get_States(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	log.Println("buffer.GetStates called")
 
 	terminal_name := r.PathValue("terminal_name")
 
@@ -24,10 +23,10 @@ func Get_States(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collRJA := db.Collection("rja")
-	if collRJA == nil {
-		log.Println("Collection 'rja' not found")
-		http.Error(w, "Collection 'rja' not found", http.StatusInternalServerError)
+	soaColl := db.Collection("soa")
+	if soaColl == nil {
+		log.Println("Collection 'soa' not found")
+		http.Error(w, "Collection 'soa' not found", http.StatusInternalServerError)
 		return
 	}
 
@@ -40,46 +39,46 @@ func Get_States(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// wszystkie autobusy przypisane do bufora (na podstawie rozkładu jazdy)
-	cur, err := collRJA.Find(r.Context(), bson.M{"terminal_id": terminal.ID})
+	// autobusy przypisane do bufora (przez sektory), które przyjeżdżają w aktywnym dniu
+	arrived, err := arrivedRJAs(r.Context(), terminal)
 	if err != nil {
-		log.Println("Error finding RJA documents:", err)
+		log.Printf("Error finding RJA documents for terminal '%s': %v", terminal_name, err)
 		http.Error(w, "Error finding RJA documents", http.StatusInternalServerError)
-		return
-	}
-
-	var allRJA []db.RJA
-	err = cur.All(r.Context(), &allRJA)
-	if err != nil {
-		log.Println("Error decoding RJA documents:", err)
-		http.Error(w, "Error decoding RJA documents", http.StatusInternalServerError)
 		return
 	}
 
 	type BufferState struct {
 		Status    string `json:"status"`
-		Timestamp int64  `json:"ts"`
+		Timestamp string `json:"ts"`
 	}
 
 	type Response struct {
-		TerminalID primitive.ObjectID `json:"bid"`
-		States     []BufferState      `json:"states"`
+		TerminalID primitive.ObjectID     `json:"bid"`
+		States     map[string]BufferState `json:"states"`
 	}
 
 	resp := Response{
 		TerminalID: terminal.ID,
+		States:     map[string]BufferState{}, // inicjalizacja → "{}" zamiast null w JSON
 	}
 
-	for _, rja := range allRJA {
-		if !rja.WasArrived() {
-			continue
+	// najnowszy wpis SOA dla danego RJA
+	collation := options.Collation{Locale: "pl", NumericOrdering: true, Strength: 1}
+	soaSortOrder := bson.D{{Key: "ts", Value: -1}, {Key: "_id", Value: -1}}
+	soaOpts := options.FindOne().SetSort(soaSortOrder).SetCollation(&collation)
+
+	for _, a := range arrived {
+		var soa db.SOA
+		err = soaColl.FindOne(r.Context(), bson.M{"rja_id": a.RJA.ID}, soaOpts).Decode(&soa)
+		if err != nil {
+			log.Printf("Error finding SOA for rja_id '%s': %v", a.RJA.ID.Hex(), err)
+			continue // brak wpisu SOA → pomijamy ten autobus
 		}
 
-		state := BufferState{
-			Status:    "",                //rja.Status,
-			Timestamp: time.Now().Unix(), // rja.Timestamp,
+		resp.States[a.RJA.ID.Hex()] = BufferState{
+			Status:    soa.Status,
+			Timestamp: soa.Timestamp.Format("02.01.2006 15:04:05"),
 		}
-		resp.States = append(resp.States, state)
 	}
 
 	err = json.NewEncoder(w).Encode(resp)
