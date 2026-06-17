@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // SessionData przechowuje dane sesji
@@ -63,15 +62,15 @@ func GetSessionData(r *http.Request) *SessionData {
 		return nil
 	}
 
-	userID, ok := session.Values["uid"].(primitive.ObjectID)
-	if !ok {
+	userID, ok := session.Values["uid"].(string)
+	if !ok || userID == "" {
 		log.Printf("GetSessionData: No user ID in session")
 		return nil
 	}
 
 	username, _ := session.Values["username"].(string)
 	return &SessionData{
-		UserID:   userID.Hex(),
+		UserID:   userID,
 		Username: username,
 	}
 }
