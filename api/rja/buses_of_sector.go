@@ -65,6 +65,13 @@ func Get_BusesOfSector(w http.ResponseWriter, r *http.Request) {
 	}
 	buses := make([]BusInfo, 0)
 
+	deref := func(p *string) string {
+		if p != nil {
+			return *p
+		}
+		return ""
+	}
+
 	for cur.Next(r.Context()) {
 		var rja db.RJA
 		if err := cur.Decode(&rja); err != nil {
@@ -76,9 +83,8 @@ func Get_BusesOfSector(w http.ResponseWriter, r *http.Request) {
 		var sra db.SRA
 		err = db.Collection("sra").FindOne(r.Context(), bson.M{"_id": rja.SraID}).Decode(&sra)
 		if err != nil {
-			log.Printf("Error finding SRA for RJA %s: %v", rja.ID.Hex(), err)
-			http.Error(w, "Error finding SRA for RJA", http.StatusInternalServerError)
-			return
+			log.Printf("SRA %s dla RJA %s nie istnieje, pomijam: %v", rja.SraID.Hex(), rja.ID.Hex(), err)
+			continue
 		}
 
 		var congregation db.Congregation
@@ -98,12 +104,12 @@ func Get_BusesOfSector(w http.ResponseWriter, r *http.Request) {
 				SID:         rja.SectorID,
 				SectorOrder: rja.SectorOrder,
 				Canceled:    sra.Canceled,
-				D1:          *rja.D1,
-				D2:          *rja.D2,
-				D3:          *rja.D3,
-				A1:          *rja.A1,
-				A2:          *rja.A2,
-				A3:          *rja.A3,
+				D1:          deref(rja.D1),
+				D2:          deref(rja.D2),
+				D3:          deref(rja.D3),
+				A1:          deref(rja.A1),
+				A2:          deref(rja.A2),
+				A3:          deref(rja.A3),
 			})
 		}
 	}
