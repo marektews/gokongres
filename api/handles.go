@@ -16,6 +16,7 @@ import (
 	"gokongres/api/sra"
 	"gokongres/api/srp"
 	"gokongres/api/terminals"
+	"gokongres/api/users"
 )
 
 // RegisterHandlers rejestruje endpointy HTTP używane przez serwera.
@@ -56,7 +57,7 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/pk/delete/{pk_id}", pk.Get_DeletePass)
 	r.HandleFunc("/pk/download/{pk_id}", pk.Get_DownloadPassData)
 	r.HandleFunc("/pk/isfreepass/{dep_name}/{tura}", pk.Get_IsFreePass)
-	r.HandleFunc("/pk/check/{pass_nr}/{regnum1}/{regnum2}/{regnum3}", pk.Get_CheckPass)
+	r.HandleFunc("/pk/check", pk.Get_CheckPass)
 
 	// monitoring endpoints (1 z 2)
 	r.HandleFunc("/monitoring/states", monitoring.Get_StatesRepo)
@@ -75,12 +76,19 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("GET /terminals/all", terminals.Get_AllList)
 	r.HandleFunc("GET /terminals/fullinfo/{terminal_id}", terminals.Get_FullInfo)
 
+	// users (konta admin) endpoints — chronione (is_users)
+	r.HandleFunc("GET /users/all", users.Get_All)
+	r.HandleFunc("POST /users/create", users.Post_Create)
+	r.HandleFunc("POST /users/update", users.Post_Update)
+	r.HandleFunc("GET /users/delete/{id}", users.Get_Delete)
+
 	// ia endpoints (0 z 2)
 	r.HandleFunc("/ia/list/{congregation_name}", ia.Get_List)
 	r.HandleFunc("/ia/download/{sra_id}", ia.Get_Download)
 
-	// rja endpoints (7 z 9)
+	// rja endpoints (8 z 9)
 	r.HandleFunc("GET /rja/zbory/{tura_id}", rja.Get_CongregationList)
+	r.HandleFunc("GET /rja/zbor/{congregation_id}", rja.Get_CongregationRJA)
 	r.HandleFunc("GET /rja/sra/{tura_id}", rja.Get_SraList)
 	r.HandleFunc("/rja/terminals", rja.Get_TerminalsList)
 	r.HandleFunc("/rja/sectors/{terminal_id}", rja.Get_SectorsList)
@@ -108,7 +116,7 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("/srp/read/{pass_id}", srp.Get_ReadPassData)
 	r.HandleFunc("/srp/update", srp.Post_UpdatePassData)
 	r.HandleFunc("/srp/download/{pass_id}", srp.Get_DownloadPassData)
-	r.HandleFunc("/srp/check/{pass_nr}/{regnum1}/{regnum2}/{regnum3}", srp.Get_CheckPass)
+	r.HandleFunc("/srp/check", srp.Get_CheckPass)
 
 	// sector endpoints (7 z 7)
 	r.HandleFunc("/sector/{sector_id}", sector.Initialize)

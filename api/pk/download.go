@@ -53,7 +53,7 @@ func Get_DownloadPassData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	qrSrcData := fmt.Sprintf("%d-%s", pk.PassNr, pk.RegNum1)
+	qrSrcData := fmt.Sprintf("pk-%d-%s", pk.PassNr, pk.RegNum1)
 	if pk.RegNum2 != nil && *pk.RegNum2 != "" {
 		qrSrcData += fmt.Sprintf("-%s", *pk.RegNum2)
 	} else {
