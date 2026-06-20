@@ -33,7 +33,7 @@ func PermissionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := db.GetUserByID(context.Background(), oid)
 	if err != nil {
-		log.Printf("PermissionsHandler: Error fetching user for UID %d: %v", sessionData.UserID, err)
+		log.Printf("PermissionsHandler: Error fetching user for UID %s: %v", sessionData.UserID, err)
 		http.Error(w, "error fetching user data", http.StatusInternalServerError)
 		return
 	}

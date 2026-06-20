@@ -14,54 +14,56 @@ func Get_BusesUsed(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	tura_id := r.PathValue("tura_id")
 
-	coll := db.Collection("rja")
-	if coll == nil {
-		log.Println("Collection 'rja' not found")
-		http.Error(w, "Collection 'rja' not found", http.StatusInternalServerError)
+	// zbory przypisane do tej tury (zbiór ID dla szybkiego sprawdzania przynależności)
+	congregations, err := db.GetCongregationsForTura(r.Context(), tura_id)
+	if err != nil {
+		log.Printf("Get_BusesUsed: error getting congregations for tura %s: %v", tura_id, err)
+		http.Error(w, "Error getting congregations for tura", http.StatusInternalServerError)
+		return
+	}
+	turaCongs := make(map[primitive.ObjectID]bool, len(congregations))
+	for _, c := range congregations {
+		turaCongs[c.ID] = true
+	}
+
+	collRJA := db.Collection("rja")
+	collSRA := db.Collection("sra")
+	if collRJA == nil || collSRA == nil {
+		log.Println("Get_BusesUsed: required collection ('rja' or 'sra') not found")
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
-	cur, err := coll.Find(r.Context(), bson.M{})
+	cur, err := collRJA.Find(r.Context(), bson.M{})
 	if err != nil {
-		log.Printf("Error finding buses for tura %s: %v", tura_id, err)
+		log.Printf("Get_BusesUsed: error finding buses for tura %s: %v", tura_id, err)
 		http.Error(w, "Error finding buses for tura", http.StatusInternalServerError)
 		return
 	}
 	defer cur.Close(r.Context())
 
 	var buses []db.RJA
-	err = cur.All(r.Context(), &buses)
-	if err != nil {
-		log.Printf("Error decoding buses for tura %s: %v", tura_id, err)
+	if err = cur.All(r.Context(), &buses); err != nil {
+		log.Printf("Get_BusesUsed: error decoding buses for tura %s: %v", tura_id, err)
 		http.Error(w, "Error decoding buses for tura", http.StatusInternalServerError)
 		return
 	}
 
-	type Response struct {
-		SraID primitive.ObjectID `json:"sra_id"`
-	}
-	resp := make([]Response, 0)
+	// płaska lista identyfikatorów SRA użytych w rozkładzie jazdy danej tury
+	// (zgodnie ze starym API: frontend sprawdza przynależność przez Array.includes)
+	resp := make([]string, 0)
 	for _, bus := range buses {
 		var sra db.SRA
-		err := db.Collection("sra").FindOne(r.Context(), bson.M{"bus_id": bus.SraID}).Decode(&sra)
-		if err != nil {
-			log.Printf("Error finding SRA for bus %s: %v", bus.SraID.Hex(), err)
-		} else {
-			var congregation db.Congregation
-			err = db.Collection("congregations").FindOne(r.Context(), bson.M{"_id": sra.CongregationID, "tura_id": tura_id}).Decode(&congregation)
-			if err != nil {
-				log.Printf("Error finding congregation for SRA %s: %v", sra.ID.Hex(), err)
-			} else {
-				resp = append(resp, Response{
-					SraID: bus.SraID,
-				})
-			}
+		if err := collSRA.FindOne(r.Context(), bson.M{"_id": bus.SraID}).Decode(&sra); err != nil {
+			continue // brak powiązanego SRA → pomijamy
+		}
+		if turaCongs[sra.CongregationID] {
+			resp = append(resp, bus.SraID.Hex())
 		}
 	}
 
-	err = json.NewEncoder(w).Encode(resp)
-	if err != nil {
-		log.Printf("Error encoding response for tura %s: %v", tura_id, err)
+	if err = json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("Get_BusesUsed: error encoding response for tura %s: %v", tura_id, err)
 		http.Error(w, "Error encoding response for tura", http.StatusInternalServerError)
 		return
 	}

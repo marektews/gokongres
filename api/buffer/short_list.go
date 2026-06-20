@@ -42,7 +42,7 @@ func Get_AllShortList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type TerminalInfo struct {
-		ID   primitive.ObjectID `json:"terminal_id"`
+		ID   primitive.ObjectID `json:"id"`
 		Name string             `json:"name"`
 	}
 	var terminalInfos []TerminalInfo
