@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"gokongres/db"
+	"gokongres/sessions"
 	"log"
 	"net/http"
 	"strconv"
@@ -68,7 +69,18 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error decoding congregation for login", http.StatusUnauthorized)
 		return
 	}
-	// logowanie udane nic więcej nie potrzeba oprócz statusu 200 OK
+	// logowanie udane - tworzymy sesję zboru (odpowiednik login_user() ze starego API),
+	// dzięki czemu chronione endpointy portali (srp/sra/ia/pk) przepuszczą żądania
+	sessionData := sessions.SessionData{
+		UserID:   congregation.ID.Hex(),
+		Username: congregation.Name,
+	}
+	if err := sessions.SetSessionData(w, r, sessionData); err != nil {
+		log.Printf("LoginHandler: failed to create session for congregation '%s': %v", creds.Login, err)
+		http.Error(w, "Failed to create session", http.StatusInternalServerError)
+		return
+	}
+
 	log.Printf("Login successful for congregation '%s'", congregation.Name)
 	w.WriteHeader(http.StatusOK)
 }

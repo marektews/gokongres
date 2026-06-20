@@ -28,6 +28,15 @@ func RegisterHandlers(host string, port int) {
 	// Middleware sesji (nagłówki no-cache) jest podłączany przy montowaniu routera
 	// na końcu tej funkcji - http.ServeMux nie wspiera metody .Use().
 
+	// protect opakowuje handler wymaganiem aktywnej sesji (odpowiednik @login_required
+	// ze starego API). Sesję zakładają: panel admina (/auth/admin), zbory (/auth/login)
+	// oraz działy PK (/pk/login). Endpointy publiczne (config, ekrany monitoring/sektor/
+	// bufor/przyjazdy/czw, skanery */check, listy potrzebne przed logowaniem jak /pk/hints
+	// i odczyty /rja używane przez publiczny wyświetlacz rozkładu) pozostają bez ochrony.
+	protect := func(h http.HandlerFunc) http.Handler {
+		return sessions.AuthMiddleware(h)
+	}
+
 	// config endpoints
 	r.HandleFunc("GET /config/all", config.Get_AllConfig) // zamiast /config/tury
 	r.HandleFunc("GET /config/active/tura", config.Get_ActiveTura)
@@ -35,31 +44,32 @@ func RegisterHandlers(host string, port int) {
 	// auth endpoints
 	r.HandleFunc("POST /auth/login", auth.LoginHandler)
 	r.HandleFunc("POST /auth/admin", auth.AdminHandler)
-	r.HandleFunc("POST /auth/logout", auth.LogoutHandler)
+	r.Handle("POST /auth/logout", protect(auth.LogoutHandler))
 	r.HandleFunc("POST /auth/permissions", auth.PermissionsHandler)
 
 	// arrivals endpoints
 	r.HandleFunc("GET /arrivals/all", arrivals.Get_All)
 	r.HandleFunc("POST /arrivals/set", arrivals.Set)
 
-	// limits endpoints
-	r.HandleFunc("GET /limits/zbory", limits.Get_Zbory)
-	r.HandleFunc("POST /limits/zbory/setlimit", limits.Post_SetZboryLimit)
-	r.HandleFunc("GET /limits/dzialy", limits.Get_Dzialy)
-	r.HandleFunc("POST /limits/dzialy/setlimit", limits.Post_SetDzialyLimit)
+	// limits endpoints (panel admina - wymaga sesji; w starym API brak ochrony, świadomie zaostrzone)
+	r.Handle("GET /limits/zbory", protect(limits.Get_Zbory))
+	r.Handle("POST /limits/zbory/setlimit", protect(limits.Post_SetZboryLimit))
+	r.Handle("GET /limits/dzialy", protect(limits.Get_Dzialy))
+	r.Handle("POST /limits/dzialy/setlimit", protect(limits.Post_SetDzialyLimit))
 
 	// PK (parking księżycowy - działy) endpoints
-	r.HandleFunc("GET /pk/hints", pk.Get_Hints)
+	// publiczne: login (wejście, zakłada sesję), hints (lista działów przed logowaniem), check (skaner)
 	r.HandleFunc("POST /pk/login", pk.Get_Login)
-	r.HandleFunc("GET /pk/all", pk.Get_LoadAll)
-	r.HandleFunc("POST /pk/create", pk.Get_CreatePassID)
-	r.HandleFunc("POST /pk/find", pk.Get_FindPassID)
-	r.HandleFunc("GET /pk/read/{pk_id}", pk.Get_ReadPassData)
-	r.HandleFunc("POST /pk/update", pk.Post_UpdatePassData)
-	r.HandleFunc("GET /pk/delete/{pk_id}", pk.Get_DeletePass)
-	r.HandleFunc("GET /pk/download/{pk_id}", pk.Get_DownloadPassData)
-	r.HandleFunc("GET /pk/isfreepass/{dep_name}/{tura}", pk.Get_IsFreePass)
+	r.HandleFunc("GET /pk/hints", pk.Get_Hints)
 	r.HandleFunc("GET /pk/check", pk.Get_CheckPass)
+	r.Handle("GET /pk/all", protect(pk.Get_LoadAll))
+	r.Handle("POST /pk/create", protect(pk.Get_CreatePassID))
+	r.Handle("POST /pk/find", protect(pk.Get_FindPassID))
+	r.Handle("GET /pk/read/{pk_id}", protect(pk.Get_ReadPassData))
+	r.Handle("POST /pk/update", protect(pk.Post_UpdatePassData))
+	r.Handle("GET /pk/delete/{pk_id}", protect(pk.Get_DeletePass))
+	r.Handle("GET /pk/download/{pk_id}", protect(pk.Get_DownloadPassData))
+	r.Handle("GET /pk/isfreepass/{dep_name}/{tura}", protect(pk.Get_IsFreePass))
 
 	// monitoring endpoints
 	r.HandleFunc("GET /monitoring/states", monitoring.Get_StatesRepo)
@@ -84,9 +94,9 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("POST /users/update", users.Post_Update)
 	r.HandleFunc("GET /users/delete/{id}", users.Get_Delete)
 
-	// ia endpoints
-	r.HandleFunc("GET /ia/list/{congregation_name}", ia.Get_List)
-	r.HandleFunc("GET /ia/download/{sra_id}", ia.Get_Download)
+	// ia endpoints (portal zboru - wymaga zalogowania)
+	r.Handle("GET /ia/list/{congregation_name}", protect(ia.Get_List))
+	r.Handle("GET /ia/download/{sra_id}", protect(ia.Get_Download))
 
 	// rja endpoints
 	r.HandleFunc("GET /rja/zbory/{tura_id}", rja.Get_CongregationList)
@@ -95,18 +105,20 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("GET /rja/terminals", rja.Get_TerminalsList)
 	r.HandleFunc("GET /rja/sectors/{terminal_id}", rja.Get_SectorsList)
 	r.HandleFunc("GET /rja/buses/{sector_id}/{tura_id}", rja.Get_BusesOfSector)
-	r.HandleFunc("GET /rja/buses/used/{tura_id}", rja.Get_BusesUsed)
-	r.HandleFunc("POST /rja/buses/save", rja.Get_BusesSave)
+	// odczyty RJA pozostają publiczne (używa ich publiczny wyświetlacz rozkładu bez logowania);
+	// chronione są tylko operacje panelu admina
+	r.Handle("GET /rja/buses/used/{tura_id}", protect(rja.Get_BusesUsed))
+	r.Handle("POST /rja/buses/save", protect(rja.Get_BusesSave))
 
-	// sra endpoints
+	// sra endpoints (search/congregations publiczne - używane przy wyborze zboru przed logowaniem)
 	r.HandleFunc("GET /sra/search/congregations/{pattern}", sra.Get_SearchCongregationsByPattern)
-	r.HandleFunc("POST /sra/submit/bus", sra.Post_SubmitBus)
-	r.HandleFunc("PUT /sra/submit/nobus/{congregation_name}", sra.Put_SubmitNoBus)
-	r.HandleFunc("POST /sra/check_pilot_duplicate", sra.Post_IsPilotDuplicate)
-	r.HandleFunc("GET /sra/table", sra.Get_Table)
-	r.HandleFunc("POST /sra/save", sra.Post_Save)
-	r.HandleFunc("GET /sra/delete/{sra_id}", sra.Get_Delete)
-	r.HandleFunc("GET /sra/export/xlsx", sra.Get_Table_Export_Xlsx)
+	r.Handle("POST /sra/submit/bus", protect(sra.Post_SubmitBus))
+	r.Handle("PUT /sra/submit/nobus/{congregation_name}", protect(sra.Put_SubmitNoBus))
+	r.Handle("POST /sra/check_pilot_duplicate", protect(sra.Post_IsPilotDuplicate))
+	r.Handle("GET /sra/table", protect(sra.Get_Table))
+	r.Handle("POST /sra/save", protect(sra.Post_Save))
+	r.Handle("GET /sra/delete/{sra_id}", protect(sra.Get_Delete))
+	r.Handle("GET /sra/export/xlsx", protect(sra.Get_Table_Export_Xlsx))
 
 	// czw (wydawanie zastępczych identyfikatorów parkingowych) endpoints
 	r.HandleFunc("GET /czw/init", czw.Get_Init)
@@ -114,19 +126,19 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("POST /czw/search", czw.Post_Search)
 	r.HandleFunc("POST /czw/cancellation", czw.Post_Cancellation)
 
-	// srp endpoints
-	r.HandleFunc("GET /srp/zbory", srp.Get_CongregationList)
-	r.HandleFunc("GET /srp/all", srp.Get_AllList)
-	r.HandleFunc("POST /srp/create", srp.Post_Create)
-	r.HandleFunc("POST /srp/find", srp.Post_FindPassID)
-	r.HandleFunc("GET /srp/delete/{srp_id}", srp.Get_Delete)
-	r.HandleFunc("GET /srp/isfreepass/{congregation_name}", srp.Get_IsFreePass)
-	r.HandleFunc("GET /srp/limit/{congregation_name}", srp.Get_UsingLimit)
-	r.HandleFunc("POST /srp/limit/change", srp.Post_RequestNewLimit)
-	r.HandleFunc("GET /srp/read/{pass_id}", srp.Get_ReadPassData)
-	r.HandleFunc("POST /srp/update", srp.Post_UpdatePassData)
-	r.HandleFunc("GET /srp/download/{pass_id}", srp.Get_DownloadPassData)
+	// srp endpoints (check publiczny - skaner; pozostałe wymagają sesji zboru/admina)
 	r.HandleFunc("GET /srp/check", srp.Get_CheckPass)
+	r.Handle("GET /srp/zbory", protect(srp.Get_CongregationList))
+	r.Handle("GET /srp/all", protect(srp.Get_AllList))
+	r.Handle("POST /srp/create", protect(srp.Post_Create))
+	r.Handle("POST /srp/find", protect(srp.Post_FindPassID))
+	r.Handle("GET /srp/delete/{srp_id}", protect(srp.Get_Delete))
+	r.Handle("GET /srp/isfreepass/{congregation_name}", protect(srp.Get_IsFreePass))
+	r.Handle("GET /srp/limit/{congregation_name}", protect(srp.Get_UsingLimit))
+	r.Handle("POST /srp/limit/change", protect(srp.Post_RequestNewLimit))
+	r.Handle("GET /srp/read/{pass_id}", protect(srp.Get_ReadPassData))
+	r.Handle("POST /srp/update", protect(srp.Post_UpdatePassData))
+	r.Handle("GET /srp/download/{pass_id}", protect(srp.Get_DownloadPassData))
 
 	// sector endpoints
 	r.HandleFunc("GET /sector/{sector_id}", sector.Initialize)

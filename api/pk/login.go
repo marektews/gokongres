@@ -3,6 +3,7 @@ package pk
 import (
 	"encoding/json"
 	"gokongres/db"
+	"gokongres/sessions"
 	"log"
 	"net/http"
 
@@ -39,11 +40,24 @@ func Get_Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := coll.FindOne(r.Context(), bson.M{"_id": departmentID, "password": req.Password})
-	if result.Err() != nil {
-		log.Printf("pk.GetLogin: invalid credentials for user %s, error: %v", req.Login, result.Err())
+	var department db.Department
+	if err := coll.FindOne(r.Context(), bson.M{"_id": departmentID, "password": req.Password}).Decode(&department); err != nil {
+		log.Printf("pk.GetLogin: invalid credentials for user %s, error: %v", req.Login, err)
 		http.Error(w, "Invalid login or password", http.StatusForbidden)
 		return
 	}
-	// Login successful jeśli tu doszło - nie musimy nic więcej zwracać
+
+	// logowanie udane - tworzymy sesję działu (odpowiednik login_user() ze starego API),
+	// dzięki czemu chronione endpointy PK przepuszczą kolejne żądania portalu
+	sessionData := sessions.SessionData{
+		UserID:   department.ID.Hex(),
+		Username: department.Name,
+	}
+	if err := sessions.SetSessionData(w, r, sessionData); err != nil {
+		log.Printf("pk.GetLogin: failed to create session for department %s: %v", req.Login, err)
+		http.Error(w, "Failed to create session", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
