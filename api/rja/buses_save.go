@@ -3,12 +3,15 @@ package rja
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"gokongres/db"
 	"log"
 	"net/http"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RJAEntry struct {
@@ -33,6 +36,13 @@ func Get_BusesSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sectorID, err := primitive.ObjectIDFromHex(req.SectorID)
+	if err != nil {
+		log.Printf("Invalid sector ID %q: %v", req.SectorID, err)
+		http.Error(w, "Invalid sector ID", http.StatusBadRequest)
+		return
+	}
+
 	coll := db.Collection("rja")
 	if coll == nil {
 		log.Println("Collection 'rja' not found")
@@ -40,10 +50,22 @@ func Get_BusesSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// kasowanie poprzedniej listy autobusów dla tej tury
-	busIDs := getBusesIDs(req.Buses)
-	// log.Println("Bus IDs to delete:", busIDs)
-	_, err = coll.DeleteMany(r.Context(), bson.M{"_id": bson.M{"$in": busIDs}})
+	// Kasowanie poprzedniej listy autokarów dla tego sektora i tej tury.
+	// Usuwamy cały zbiór wpisów, który był wyświetlany i edytowany - czyli
+	// wpisy RJA tego sektora, których SRA należy do zboru przypisanego do
+	// bieżącej tury. Dzięki temu wiersze usunięte w interfejsie znikają z
+	// bazy i nie wracają po zapisie. (Wcześniej kasowane były tylko wiersze
+	// nadal obecne w żądaniu, więc usunięty wiersz nigdy nie był kasowany.)
+	sraIDs, err := getSRAIDsForTura(r.Context(), req.TuraID)
+	if err != nil {
+		log.Printf("Error resolving SRA IDs for tura %d: %v", req.TuraID, err)
+		http.Error(w, "Error resolving SRA IDs for tura", http.StatusInternalServerError)
+		return
+	}
+	_, err = coll.DeleteMany(r.Context(), bson.M{
+		"sector_id": sectorID,
+		"sra_id":    bson.M{"$in": sraIDs},
+	})
 	if err != nil {
 		log.Printf("Error deleting old buses for sector %s and tura %d: %v", req.SectorID, req.TuraID, err)
 		http.Error(w, "Error deleting old buses for sector and tura", http.StatusInternalServerError)
@@ -80,12 +102,35 @@ func updateSRACanceledStatus(ctx context.Context, sraID primitive.ObjectID, canc
 }
 
 /**
- * Tworzenie listy ID autobusów z listy autobusów
+ * Lista ID rekordów SRA należących do zborów przypisanych do danej tury
+ * (tura == turaID lub tura == nil). Służy do ograniczenia kasowania rozkładu
+ * jazdy do wpisów widocznych w bieżącej turze.
  */
-func getBusesIDs(buses []RJAEntry) []primitive.ObjectID {
-	ids := make([]primitive.ObjectID, len(buses))
-	for i, bus := range buses {
-		ids[i] = bus.ID
+func getSRAIDsForTura(ctx context.Context, turaID int) ([]primitive.ObjectID, error) {
+	congregations, err := db.GetCongregationsForTura(ctx, strconv.Itoa(turaID))
+	if err != nil {
+		return nil, err
 	}
-	return ids
+	congIDs := db.GetCongregationIDs(congregations)
+
+	coll := db.Collection("sra")
+	if coll == nil {
+		return nil, fmt.Errorf("collection 'sra' not found")
+	}
+	opts := options.Find().SetProjection(bson.M{"_id": 1})
+	cur, err := coll.Find(ctx, bson.M{"congregation_id": bson.M{"$in": congIDs}}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var sras []db.SRA
+	if err := cur.All(ctx, &sras); err != nil {
+		return nil, err
+	}
+	ids := make([]primitive.ObjectID, len(sras))
+	for i, sra := range sras {
+		ids[i] = sra.ID
+	}
+	return ids, nil
 }
