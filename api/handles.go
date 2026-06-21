@@ -18,6 +18,7 @@ import (
 	"gokongres/api/srp"
 	"gokongres/api/terminals"
 	"gokongres/api/users"
+	"gokongres/api/ws"
 	"gokongres/sessions"
 )
 
@@ -148,6 +149,9 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("GET /sector/notify/readytoleave/{rja_id}", sector.Notification_ReadyToLeave)
 	r.HandleFunc("GET /sector/notify/onsector/{rja_id}", sector.Notification_OnSector)
 	r.HandleFunc("GET /sector/notify/ontheroad/{rja_id}", sector.Notification_OnRoad)
+
+	// websocket — powiadamianie o zmianach stanów odprawy autokarów (publiczny, jak /states i /notify/*)
+	r.HandleFunc("GET /ws/odprawa", ws.HandleWS)
 
 	r.HandleFunc("/", RootHandler(host, port))
 

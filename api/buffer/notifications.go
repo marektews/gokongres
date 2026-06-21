@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"encoding/json"
+	"gokongres/api/ws"
 	"gokongres/db"
 	"log"
 	"net/http"
@@ -42,6 +43,9 @@ func notification(w http.ResponseWriter, r *http.Request, status string) {
 		http.Error(w, "Error inserting notification", http.StatusInternalServerError)
 		return
 	}
+
+	// rozgłoszenie zmiany do pozostałych ekranów obserwujących ten sektor
+	ws.PublishState(r.Context(), objID, status, ts)
 
 	type Response struct {
 		RjaID     primitive.ObjectID `json:"rja_id"`
