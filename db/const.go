@@ -9,13 +9,13 @@ import (
 )
 
 type GenerateIdents struct {
-	SRA bool `json:"sra"`
-	SRP bool `json:"srp"`
-	PK  bool `json:"pk"`
+	SRA bool `bson:"sra" json:"sra"`
+	SRP bool `bson:"srp" json:"srp"`
+	PK  bool `bson:"pk" json:"pk"`
 }
 type ConstConfig struct {
-	Tury           []Tura         `json:"tury"`
-	GenerateIdents GenerateIdents `json:"generate_idents"`
+	Tury           []Tura         `bson:"tury" json:"tury"`
+	GenerateIdents GenerateIdents `bson:"generate_idents" json:"generate_idents"`
 }
 
 /**
