@@ -190,7 +190,7 @@ func embededQRCode(svgPass *xmlquery.Node, svgQRCode string) error {
 }
 
 /**
- * Funkcja generująca ostateczny SVG identyfikatora parkingowego
+ * Funkcja generująca ostateczny SVG identyfikatora parkingowego (ten sam samochód 3 dni)
  * Przyjmuje dane SRP, dane zboru oraz ciąg SVG kodu QR
  * Wczytuje szablon SVG z pliku, modyfikuje go, osadzając odpowiednie dane i kod QR
  * Zwraca wygenerowany SVG jako string lub błąd, jeśli wystąpi problem podczas generowania
@@ -207,29 +207,9 @@ func gen_1(srp db.SRP, congregation db.Congregation, qrCode string) (string, err
 		return "", fmt.Errorf("error parsing XML template: %v", err)
 	}
 
-	// nr identyfikatora
-	xmlPassID := xmlquery.FindOne(doc, ".//*[@id='numerIdentyfikatora']")
-	if xmlPassID != nil {
-		xmlPassID.FirstChild.Data = fmt.Sprintf("%d", srp.PassNr)
-	} else {
-		return "", fmt.Errorf("error finding XML node for pass number")
-	}
-
-	// nazwa zboru
-	xmlCongregationName := xmlquery.FindOne(doc, ".//*[@id='nazwaZboru']")
-	if xmlCongregationName != nil {
-		xmlCongregationName.FirstChild.Data = congregation.Name
-	} else {
-		return "", fmt.Errorf("error finding XML node for congregation name")
-	}
-
-	// nr rejestracyjny na 3 dni kongresowe
-	xmlRejNum := xmlquery.FindOne(doc, ".//*[@id='rejnum']")
-	if xmlRejNum != nil {
-		xmlRejNum.FirstChild.Data = srp.Car1.RegNum
-	} else {
-		return "", fmt.Errorf("error finding XML node for registration number")
-	}
+	setText(doc, "numerIdentyfikatora", fmt.Sprintf("%d", srp.PassNr))
+	setText(doc, "nazwaZboru", congregation.Name)
+	setText(doc, "rejnum", srp.Car1.RegNum)
 
 	// osadzanie qrcode
 	err = embededQRCode(doc, qrCode)
@@ -243,6 +223,10 @@ func gen_1(srp db.SRP, congregation db.Congregation, qrCode string) (string, err
 }
 
 /**
+ * Funkcja generująca ostateczny SVG identyfikatora parkingowego (dla 2 lub 3 samochodów)
+ * Przyjmuje dane SRP, dane zboru oraz ciąg SVG kodu QR
+ * Wczytuje szablon SVG z pliku, modyfikuje go, osadzając odpowiednie dane i kod QR
+ * Zwraca wygenerowany SVG jako string lub błąd, jeśli wystąpi problem podczas generowania
  */
 func gen_3(srp db.SRP, congregation db.Congregation, qrCode string) (string, error) {
 	// wczytanie szablonu XML z pliku
@@ -257,40 +241,11 @@ func gen_3(srp db.SRP, congregation db.Congregation, qrCode string) (string, err
 	}
 
 	// nr identyfikatora
-	xmlPassID := xmlquery.FindOne(doc, ".//*[@id='numerIdentyfikatora']")
-	if xmlPassID != nil {
-		xmlPassID.FirstChild.Data = fmt.Sprintf("%d", srp.PassNr)
-	} else {
-		return "", fmt.Errorf("error finding XML node for pass number")
-	}
-
-	// nazwa zboru
-	xmlCongregationName := xmlquery.FindOne(doc, ".//*[@id='nazwaZboru']")
-	if xmlCongregationName != nil {
-		xmlCongregationName.FirstChild.Data = congregation.Name
-	} else {
-		return "", fmt.Errorf("error finding XML node for congregation name")
-	}
-
-	// nr rejestracyjny na poszczególne dni kongresowe
-	xmlRejNum := xmlquery.FindOne(doc, ".//*[@id='d1rejnum']")
-	if xmlRejNum != nil {
-		xmlRejNum.FirstChild.Data = srp.Car1.RegNum
-	} else {
-		return "", fmt.Errorf("error finding XML node for registration number 1")
-	}
-	xmlRejNum = xmlquery.FindOne(doc, ".//*[@id='d2rejnum']")
-	if xmlRejNum != nil {
-		xmlRejNum.FirstChild.Data = srp.Car2.RegNum
-	} else {
-		return "", fmt.Errorf("error finding XML node for registration number 2")
-	}
-	xmlRejNum = xmlquery.FindOne(doc, ".//*[@id='d3rejnum']")
-	if xmlRejNum != nil {
-		xmlRejNum.FirstChild.Data = srp.Car3.RegNum
-	} else {
-		return "", fmt.Errorf("error finding XML node for registration number 3")
-	}
+	setText(doc, "numerIdentyfikatora", fmt.Sprintf("%d", srp.PassNr))
+	setText(doc, "nazwaZboru", congregation.Name)
+	setText(doc, "d1rejnum", srp.Car1.RegNum)
+	setText(doc, "d2rejnum", deref(srp.Car2))
+	setText(doc, "d3rejnum", deref(srp.Car3))
 
 	// osadzanie qrcode
 	err = embededQRCode(doc, qrCode)
@@ -301,4 +256,19 @@ func gen_3(srp db.SRP, congregation db.Congregation, qrCode string) (string, err
 	// konwersja dokumentu XML z powrotem na string
 	outputXML := doc.OutputXML(true)
 	return outputXML, nil
+}
+
+// setText ustawia treść tekstową węzła SVG o podanym id (jeśli istnieje).
+func setText(doc *xmlquery.Node, id, value string) {
+	n := xmlquery.FindOne(doc, ".//*[@id='"+id+"']")
+	if n != nil && n.FirstChild != nil {
+		n.FirstChild.Data = value
+	}
+}
+
+func deref(p *db.CarInfo) string {
+	if p != nil {
+		return p.RegNum
+	}
+	return ""
 }
