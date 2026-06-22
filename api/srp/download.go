@@ -217,6 +217,7 @@ func gen_1(srp db.SRP, congregation db.Congregation, qrCode string) (string, err
 
 	setText(doc, "numerIdentyfikatora", fmt.Sprintf("%d", srp.PassNr))
 	setText(doc, "nazwaZboru", congregation.Name)
+	setText(doc, "parking", parking(srp.MobilityRestrictions))
 	setText(doc, "rejnum", srp.Car1.RegNum)
 
 	// osadzanie qrcode
@@ -251,6 +252,7 @@ func gen_3(srp db.SRP, congregation db.Congregation, qrCode string) (string, err
 	// nr identyfikatora
 	setText(doc, "numerIdentyfikatora", fmt.Sprintf("%d", srp.PassNr))
 	setText(doc, "nazwaZboru", congregation.Name)
+	setText(doc, "parking", parking(srp.MobilityRestrictions))
 	setText(doc, "d1rejnum", srp.Car1.RegNum)
 	setText(doc, "d2rejnum", deref(srp.Car2))
 	setText(doc, "d3rejnum", deref(srp.Car3))
@@ -279,4 +281,12 @@ func deref(p *db.CarInfo) string {
 		return p.RegNum
 	}
 	return ""
+}
+
+func parking(mobilityRestrictions bool) string {
+	if mobilityRestrictions {
+		return "Torwar"
+	} else {
+		return "Stadion"
+	}
 }
