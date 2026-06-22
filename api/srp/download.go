@@ -72,8 +72,16 @@ func Get_DownloadPassData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hasCar2 := srp.Car2 != nil && srp.Car2.RegNum != ""
+	hasCar3 := srp.Car3 != nil && srp.Car3.RegNum != ""
+
+	// "ten sam pojazd przez 3 dni" także wtedy, gdy wszystkie pola są identyczne
+	allSameRegNum := hasCar2 && hasCar3 &&
+		srp.Car1.RegNum == srp.Car2.RegNum &&
+		srp.Car1.RegNum == srp.Car3.RegNum
+
 	var svg string
-	if srp.Car2 != nil && srp.Car2.RegNum != "" && srp.Car3 != nil && srp.Car3.RegNum != "" {
+	if hasCar2 && hasCar3 && !allSameRegNum {
 		svg, err = gen_3(srp, congregation, svgQRCode)
 		if err != nil {
 			log.Println("Error generating SVG:", err)
