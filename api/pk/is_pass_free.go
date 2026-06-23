@@ -1,11 +1,14 @@
 package pk
 
 import (
+	"errors"
 	"gokongres/db"
 	"log"
 	"net/http"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 /**
@@ -30,8 +33,21 @@ func Get_IsFreePass(w http.ResponseWriter, r *http.Request) {
 	depName := r.PathValue("dep_name")
 	tura := r.PathValue("tura")
 
+	// pole "tura" w bazie jest typu int - PathValue zwraca string, więc bez konwersji
+	// zapytanie nie dopasowałoby żadnego dokumentu (MongoDB porównuje z uwzględnieniem typu)
+	turaInt, err := strconv.Atoi(tura)
+	if err != nil {
+		log.Printf("Invalid tura value %q: %v", tura, err)
+		http.Error(w, "Invalid tura", http.StatusBadRequest)
+		return
+	}
+
 	var department db.Department
-	err := collDepartments.FindOne(r.Context(), bson.M{"name": depName, "tura": tura}).Decode(&department)
+	err = collDepartments.FindOne(r.Context(), bson.M{"name": depName, "tura": turaInt}).Decode(&department)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		log.Println("Error occurred while finding department:", err)
 		http.Error(w, "Error occurred while finding department", http.StatusInternalServerError)
