@@ -11,12 +11,19 @@ import (
 )
 
 type Congregation struct {
-	ID     primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Number int                `bson:"number" json:"number"`
-	Name   string             `bson:"name" json:"name"`
-	Lang   string             `bson:"lang" json:"lang"`
-	Plimit int                `bson:"plimit" json:"plimit"`
-	Tura   int                `bson:"tura" json:"tura"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Number       int                `bson:"number" json:"number"`
+	Name         string             `bson:"name" json:"name"`
+	Lang         string             `bson:"lang" json:"lang"`
+	Plimit       int                `bson:"plimit" json:"plimit"`
+	Tura         int                `bson:"tura" json:"tura"`
+	LimitRequest *LimitRequest      `bson:"limitRequest,omitempty" json:"limitRequest,omitempty"`
+}
+
+// LimitRequest to prośba zboru o zmianę limitu pojazdów (zapisywana z projektu srp).
+type LimitRequest struct {
+	Plimit int    `bson:"plimit" json:"plimit"`
+	Reason string `bson:"reason" json:"reason"`
 }
 
 /**

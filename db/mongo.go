@@ -125,7 +125,11 @@ func UpdateZboryLimit(ctx context.Context, id string, plimit int) error {
 		log.Printf("UpdateZboryLimit: Error converting id: %v", err)
 		return err
 	}
-	_, err = coll.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"plimit": plimit}})
+	// Zapis nowego limitu kasuje ewentualną prośbę o zmianę limitu.
+	_, err = coll.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{
+		"$set":   bson.M{"plimit": plimit},
+		"$unset": bson.M{"limitRequest": ""},
+	})
 	return err
 }
 

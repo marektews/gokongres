@@ -11,12 +11,13 @@ import (
 
 // zborResponse to typ używany w odpowiedziach JSON
 type zborResponse struct {
-	ID     string `json:"id"`
-	Number int    `json:"number"`
-	Name   string `json:"name"`
-	Lang   string `json:"lang"`
-	Plimit int    `json:"plimit"`
-	Tura   int    `json:"tura"`
+	ID           string           `json:"id"`
+	Number       int              `json:"number"`
+	Name         string           `json:"name"`
+	Lang         string           `json:"lang"`
+	Plimit       int              `json:"plimit"`
+	Tura         int              `json:"tura"`
+	LimitRequest *db.LimitRequest `json:"limitRequest,omitempty"`
 }
 
 // GetZbory zwraca wszystkie zbiory (zbory) jako JSON.
@@ -33,12 +34,13 @@ func Get_Zbory(w http.ResponseWriter, r *http.Request) {
 	resp := make([]zborResponse, 0, len(zbory))
 	for _, z := range zbory {
 		resp = append(resp, zborResponse{
-			ID:     z.ID.Hex(),
-			Number: z.Number,
-			Name:   z.Name,
-			Lang:   z.Lang,
-			Plimit: z.Plimit,
-			Tura:   z.Tura,
+			ID:           z.ID.Hex(),
+			Number:       z.Number,
+			Name:         z.Name,
+			Lang:         z.Lang,
+			Plimit:       z.Plimit,
+			Tura:         z.Tura,
+			LimitRequest: z.LimitRequest,
 		})
 	}
 
