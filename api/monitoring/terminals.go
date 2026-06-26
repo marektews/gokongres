@@ -28,10 +28,7 @@ func Get_TerminalsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := options.Find().SetProjection(bson.M{
-		"_id": 1,
-	})
-	curTerm, err := collTerminals.Find(r.Context(), bson.M{}, opts)
+	curTerm, err := collTerminals.Find(r.Context(), bson.M{})
 	if err != nil {
 		log.Printf("Błąd podczas pobierania terminali z bazy danych: %v", err)
 		http.Error(w, "Błąd podczas pobierania terminali z bazy danych", http.StatusInternalServerError)
