@@ -63,6 +63,7 @@ func RegisterHandlers(host string, port int) {
 	r.HandleFunc("POST /pk/login", pk.Get_Login)
 	r.HandleFunc("GET /pk/hints", pk.Get_Hints)
 	r.HandleFunc("GET /pk/check", pk.Get_CheckPass)
+	r.HandleFunc("GET /pk/free", pk.Get_FreePass)
 	r.Handle("GET /pk/all", protect(pk.Get_LoadAll))
 	r.Handle("POST /pk/create", protect(pk.Get_CreatePassID))
 	r.Handle("POST /pk/find", protect(pk.Get_FindPassID))
@@ -129,6 +130,7 @@ func RegisterHandlers(host string, port int) {
 
 	// srp endpoints (check publiczny - skaner; pozostałe wymagają sesji zboru/admina)
 	r.HandleFunc("GET /srp/check", srp.Get_CheckPass)
+	r.HandleFunc("GET /srp/free", srp.Get_FreePass)
 	r.Handle("GET /srp/zbory", protect(srp.Get_CongregationList))
 	r.Handle("GET /srp/all", protect(srp.Get_AllList))
 	r.Handle("POST /srp/create", protect(srp.Post_Create))
