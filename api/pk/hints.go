@@ -39,18 +39,20 @@ func Get_Hints(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type Hint struct {
-		ID   primitive.ObjectID `json:"id"`
-		Name string             `json:"name"`
-		Lang string             `json:"lang"`
-		Tura int                `json:"tura"`
+		ID     primitive.ObjectID `json:"id"`
+		Name   string             `json:"name"`
+		Lang   string             `json:"lang"`
+		Tura   int                `json:"tura"`
+		Plimit int                `json:"plimit"`
 	}
 	hints := make([]Hint, 0)
 	for _, dept := range departments {
 		hints = append(hints, Hint{
-			ID:   dept.ID,
-			Name: dept.Name,
-			Lang: dept.Lang,
-			Tura: dept.TuraID,
+			ID:     dept.ID,
+			Name:   dept.Name,
+			Lang:   dept.Lang,
+			Tura:   dept.TuraID,
+			Plimit: dept.Plimit,
 		})
 	}
 
