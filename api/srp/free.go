@@ -2,12 +2,14 @@ package srp
 
 import (
 	"errors"
+	"gokongres/api/ws"
 	"gokongres/db"
 	"gokongres/helpers"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -90,6 +92,8 @@ func Get_FreePass(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "błąd serwera - spróbuj ponownie później", http.StatusInternalServerError)
 		return
 	}
+
+	ws.PublishParking("srp", srp.ID, srp.PassNr, false, time.Now())
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

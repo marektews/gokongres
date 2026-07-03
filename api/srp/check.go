@@ -3,6 +3,7 @@ package srp
 import (
 	"errors"
 	"fmt"
+	"gokongres/api/ws"
 	"gokongres/db"
 	"gokongres/helpers"
 	"log"
@@ -95,16 +96,19 @@ func Get_CheckPass(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	now := time.Now()
 	_, err = collSRP.UpdateOne(
 		r.Context(),
 		bson.M{"_id": srp.ID},
-		bson.M{"$set": bson.M{dayField: time.Now()}},
+		bson.M{"$set": bson.M{dayField: now}},
 	)
 	if err != nil {
 		log.Println("Error occurred while updating SRP entry:", err)
 		http.Error(w, "błąd serwera - spróbuj ponownie później", http.StatusInternalServerError)
 		return
 	}
+
+	ws.PublishParking("srp", srp.ID, srp.PassNr, true, now)
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

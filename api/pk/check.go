@@ -3,6 +3,7 @@ package pk
 import (
 	"errors"
 	"fmt"
+	"gokongres/api/ws"
 	"gokongres/db"
 	"gokongres/helpers"
 	"log"
@@ -95,16 +96,19 @@ func Get_CheckPass(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	now := time.Now()
 	_, err = collDepsPK.UpdateOne(
 		r.Context(),
 		bson.M{"_id": pkEntry.ID},
-		bson.M{"$set": bson.M{dayField: time.Now()}},
+		bson.M{"$set": bson.M{dayField: now}},
 	)
 	if err != nil {
 		log.Println("Error occurred while updating PK entry:", err)
 		http.Error(w, "błąd serwera - spróbuj ponownie później", http.StatusInternalServerError)
 		return
 	}
+
+	ws.PublishParking("pk", pkEntry.ID, pkEntry.PassNr, true, now)
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

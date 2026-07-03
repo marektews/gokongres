@@ -76,6 +76,8 @@ func RegisterHandlers(host string, port int) {
 	// monitoring endpoints
 	r.HandleFunc("GET /monitoring/states", monitoring.Get_StatesRepo)
 	r.HandleFunc("GET /monitoring/terminals", monitoring.Get_TerminalsList)
+	r.HandleFunc("GET /monitoring/parking/srp", monitoring.Get_ParkingSrp)
+	r.HandleFunc("GET /monitoring/parking/pk", monitoring.Get_ParkingPk)
 
 	// buffer endpoints
 	r.HandleFunc("GET /buffer/all", buffer.Get_AllShortList)
